@@ -24,11 +24,21 @@ static CrStatus CrMain_Init()
 	return status;
 }
 
+// Run Cronus in interactive mode
+static int Cr_RunStdin()
+{
+	std::ifstream file("<stdin>"); // make a blank file for stdin
+	int run = CrRun_FileObject(&file, "<stdin>", false);
+	return (run != 0);
+}
+
 static int Cr_RunCronus(int *exitcode)
 {
 	CrInterpreterState* interp = CrInterpreterState_Get();
 
 	CrMain_Header();
+
+	*exitcode = Cr_RunStdin();
 
 	return 0;
 }

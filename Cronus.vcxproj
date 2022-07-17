@@ -110,7 +110,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>src/</AdditionalIncludeDirectories>
@@ -127,7 +127,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>src/</AdditionalIncludeDirectories>
@@ -143,12 +143,15 @@
   <ItemGroup>
     <ClInclude Include="src\config.h" />
     <ClInclude Include="src\core\cronusrun.h" />
+    <ClInclude Include="src\core\ctype.h" />
+    <ClInclude Include="src\core\errorcode.h" />
     <ClInclude Include="src\core\interpreter.h" />
     <ClInclude Include="src\core\lifecycle.h" />
     <ClInclude Include="src\core\mem.h" />
     <ClInclude Include="src\core\error.h" />
     <ClInclude Include="src\core\runtime.h" />
     <ClInclude Include="src\core\status.h" />
+    <ClInclude Include="src\core\sys.h" />
     <ClInclude Include="src\core\thread.h" />
     <ClInclude Include="src\Cronus.h" />
     <ClInclude Include="src\objects\baseobject.h" />
@@ -156,17 +159,24 @@
     <ClInclude Include="src\objects\intobject.h" />
     <ClInclude Include="src\objects\object.h" />
     <ClInclude Include="src\objects\stringobject.h" />
+    <ClInclude Include="src\parser\ast.h" />
+    <ClInclude Include="src\parser\generator.h" />
+    <ClInclude Include="src\parser\parser.h" />
+    <ClInclude Include="src\parser\token.h" />
+    <ClInclude Include="src\parser\tokenizer.h" />
     <ClInclude Include="src\patchlevel.h" />
     <ClInclude Include="src\port.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\cronusrun.cpp" />
+    <ClCompile Include="src\core\ctype.cpp" />
     <ClCompile Include="src\core\interpreter.cpp" />
     <ClCompile Include="src\core\lifecycle.cpp" />
     <ClCompile Include="src\core\mem.cpp" />
     <ClCompile Include="src\core\error.cpp" />
     <ClCompile Include="src\core\runtime.cpp" />
     <ClCompile Include="src\core\status.cpp" />
+    <ClCompile Include="src\core\sys.cpp" />
     <ClCompile Include="src\core\thread.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\objects\baseobject.cpp" />
@@ -174,6 +184,11 @@
     <ClCompile Include="src\objects\intobject.cpp" />
     <ClCompile Include="src\objects\object.cpp" />
     <ClCompile Include="src\objects\stringobject.cpp" />
+    <ClCompile Include="src\parser\ast.cpp" />
+    <ClCompile Include="src\parser\generator.cpp" />
+    <ClCompile Include="src\parser\parser.cpp" />
+    <ClCompile Include="src\parser\token.cpp" />
+    <ClCompile Include="src\parser\tokenizer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

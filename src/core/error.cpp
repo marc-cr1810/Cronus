@@ -69,11 +69,11 @@ static CrObject* error_format(CrThreadState* tstate, CrObject* exception, const 
 
 static void error_set_object(CrThreadState* tstate, CrObject* exception, CrObject* value)
 {
-	if (exception == NULL || CrException_Check(exception))
-	{
-		error_format(tstate, CrExc_SystemError, "exception is not an Exception object");
-		return;
-	}
+	//if (!CrException_Check(exception))
+	//{
+	//	error_format(tstate, CrExc_SystemError, "exception is not an Exception object");
+	//	return;
+	//}
 
 	CrObject_XINCREF(value);
 	error_restore(tstate, exception, value);

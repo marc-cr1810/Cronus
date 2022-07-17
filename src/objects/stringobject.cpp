@@ -1,8 +1,41 @@
 #include "stringobject.h"
 
+#include <core/error.h>
+
 /*
 	Methods
 */
+
+static CrObject* string_concat(CrStringObject* a, CrObject* b)
+{
+	CrStringObject* result = NULL;
+	if (!CrString_CheckExact(b))
+	{
+		CrError_SetString(CrExc_TypeError, "can only concat strings");
+		return NULL;
+	}
+
+	if (Cr_SIZE(a) == 0)
+	{
+		result = (CrStringObject*)b;
+		CrObject_INCREF(result);
+		return (CrObject*)result;
+	}
+	if (Cr_SIZE(b) == 0)
+	{
+		result = a;
+		CrObject_INCREF(result);
+		return (CrObject*)result;
+	}
+
+	result = (CrStringObject*)CrStringObject_FromStringAndSize(NULL, Cr_SIZE(a) + Cr_SIZE(b));
+	if (result != NULL)
+	{
+		memcpy(result->ob_svar, a->ob_svar, Cr_SIZE(a));
+		memcpy(result->ob_svar + Cr_SIZE(a), ((CrStringObject*)b)->ob_svar, Cr_SIZE(b));
+	}
+	return (CrObject*)result;
+}
 
 static void string_dealloc(CrStringObject* self)
 {
@@ -17,6 +50,7 @@ CrTypeObject CrStringType = {
 	"String object type",					// tp_doc
 	sizeof(CrStringObject),					// tp_size
 	0,										// tp_itemsize
+	TPFLAGS_DEFAULT | TPFLAGS_BASETYPE,		// tp_flags
 	(destructor)string_dealloc,				// tp_dealloc
 	Mem_Free								// tp_free
 };
@@ -33,8 +67,7 @@ CrObject* CrStringObject_FromStringAndSize(const char* bytes, Cr_size_t size)
 
 	if (size < 0)
 	{
-		///TODO: ERROR HANDLING
-		//CrError_SetString(CrExc_SystemError, "Negative size passed to CrStringObject_FromStringAndSize");
+		CrError_SetString(CrExc_SystemError, "Negative size passed to CrStringObject_FromStringAndSize");
 		return NULL;
 	}
 
@@ -57,4 +90,15 @@ CrObject* CrStringObject_FromStringAndSize(const char* bytes, Cr_size_t size)
 	VAROBJECT_SET_SIZE(obj, size);
 	obj->ob_alloc = alloc;
 	return (CrObject*)obj;
+}
+
+CrObject* CrString_Concat(CrObject* a, CrObject* b)
+{
+	if (!CrString_CheckExact(a))
+	{
+		CrError_SetString(CrExc_SystemError, "Tried to pass non-CrStringObject in CrString_Concat");
+		return NULL;
+	}
+
+	return string_concat((CrStringObject*)a, b);
 }

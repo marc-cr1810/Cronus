@@ -1,6 +1,6 @@
 #pragma once
 
-#include "objects/object.h"
+#include <objects/object.h>
 
 typedef struct _intobject
 {

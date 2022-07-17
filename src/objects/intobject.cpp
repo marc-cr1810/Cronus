@@ -10,13 +10,14 @@ static void int_dealloc(CrIntObject* self)
 }
 
 CrTypeObject CrIntType = {
-	VAROBJECT_HEAD_INIT(&CrIntType, 0)	// base
-	"int",								// tp_name
-	"Interger object type",				// tp_doc
-	sizeof(CrIntObject),				// tp_size
-	0,									// tp_itemsize
-	(destructor)int_dealloc,			// tp_dealloc
-	Mem_Free							// tp_free
+	VAROBJECT_HEAD_INIT(&CrIntType, 0)		// base
+	"int",									// tp_name
+	"Interger object type",					// tp_doc
+	sizeof(CrIntObject),					// tp_size
+	0,										// tp_itemsize
+	TPFLAGS_DEFAULT | TPFLAGS_BASETYPE,		// tp_flags
+	(destructor)int_dealloc,				// tp_dealloc
+	Mem_Free								// tp_free
 };
 
 CrObject* CrIntObject_FromInt(Cr_int32_t ival)

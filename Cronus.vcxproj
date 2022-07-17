@@ -112,7 +112,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>src/</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -129,7 +129,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>src/</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -142,7 +142,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src\config.h" />
-    <ClInclude Include="src\core\crmem.h" />
+    <ClInclude Include="src\core\cronusrun.h" />
+    <ClInclude Include="src\core\interpreter.h" />
+    <ClInclude Include="src\core\mem.h" />
+    <ClInclude Include="src\core\error.h" />
+    <ClInclude Include="src\core\runtime.h" />
+    <ClInclude Include="src\core\status.h" />
+    <ClInclude Include="src\core\thread.h" />
     <ClInclude Include="src\Cronus.h" />
     <ClInclude Include="src\objects\floatobject.h" />
     <ClInclude Include="src\objects\intobject.h" />
@@ -152,7 +158,13 @@
     <ClInclude Include="src\port.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\core\crmem.cpp" />
+    <ClCompile Include="src\core\cronusrun.cpp" />
+    <ClCompile Include="src\core\interpreter.cpp" />
+    <ClCompile Include="src\core\mem.cpp" />
+    <ClCompile Include="src\core\error.cpp" />
+    <ClCompile Include="src\core\runtime.cpp" />
+    <ClCompile Include="src\core\status.cpp" />
+    <ClCompile Include="src\core\thread.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\objects\floatobject.cpp" />
     <ClCompile Include="src\objects\intobject.cpp" />

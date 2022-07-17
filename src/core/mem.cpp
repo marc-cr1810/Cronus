@@ -1,4 +1,4 @@
-#include "crmem.h"
+#include "mem.h"
 
 void* Mem_Alloc(size_t size)
 {
@@ -9,7 +9,7 @@ void* Mem_Alloc(size_t size)
 
 void* Mem_Calloc(size_t elemCount, size_t elemSize)
 {
-	if (elemCount == 0 || elemCount == 0)
+	if (elemCount == 0 || elemSize == 0)
 	{
 		elemCount = 1;
 		elemSize = 1;

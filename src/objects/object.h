@@ -1,7 +1,7 @@
 #pragma once
 
-#include "port.h"
-#include "core/crmem.h"
+#include <port.h>
+#include <core/mem.h>
 
 struct _typeobject;
 
@@ -62,20 +62,29 @@ typedef void (*destructor)(CrObject*);
 typedef struct _typeobject
 {
 	CrObject_VAR_HEAD;
-	const char* tp_name;	// CrObject type name
-	const char* tp_doc;		// Documentation string
+	const char* tp_name;		// CrObject type name
+	const char* tp_doc;			// Documentation string
 	size_t tp_size;
-	size_t tp_itemsize; // For memory allocation
+	size_t tp_itemsize;			// For memory allocation
+	unsigned long tp_flags;		// Flags for specific features and behaviour
 
 	/* Methods to implement standard operations */
 	destructor tp_dealloc;
 
-	freefunc tp_free; // Low-level free memory routine
+	freefunc tp_free;			// Low-level free memory routine
 } CrTypeObject;
 
 #define Cr_TYPE(ob)             (CrObject_CAST(ob)->ob_type)
-
 #define Cr_SIZE(ob)             (CrVarObject_CAST(ob)->ob_size)
+
+static inline int _Cr_IS_TYPE(const CrObject* ob, const CrTypeObject* type) {
+	return Cr_TYPE(ob) == type;
+}
+#define Cr_IS_TYPE(ob, type) _Cr_IS_TYPE(CrObject_CAST_CONST(ob), type)
+
+/* Generic type check */
+int CrType_IsSubtype(CrTypeObject* a, CrTypeObject* b);
+#define CrObject_TypeCheck(ob, tp) (Cr_IS_TYPE(ob, tp) || CrType_IsSubtype(Cr_TYPE(ob), (tp)))
 
 /*
 	Functions
@@ -87,6 +96,45 @@ CrObject* Object_New(CrTypeObject* type);
 
 /* Create a new reference to an object */
 void ObjectNewRef(CrObject* obj);
+
+/*
+ * CrObject reference count modification
+ *
+ * Objects keep track of the amount of references to them they have.
+ * If an objects reference count reaches 0, it is free'd from memory.
+*/
+
+/* Increase object reference count */
+static inline void ObjectIncRef(CrObject* obj)
+{
+	obj->ob_refcount++;
+}
+#define CrObject_INCREF(obj) ObjectIncRef(CrObject_CAST(obj))
+
+/* Decrease object reference count */
+static inline void ObjectDecRef(CrObject* obj)
+{
+	obj->ob_refcount--;
+	if (obj->ob_refcount == 0)
+		obj->ob_type->tp_dealloc(obj);
+}
+#define CrObject_DECREF(obj) ObjectDecRef(CrObject_CAST(obj))
+
+/* Increase object reference count incase object pointer can be NULL */
+static inline void ObjectXIncRef(CrObject* obj)
+{
+	if (obj != NULL)
+		ObjectIncRef(obj);
+}
+#define CrObject_XINCREF(obj) ObjectXIncRef(CrObject_CAST(obj))
+
+/* Decrease object reference count incase object pointer can be NULL */
+static inline void ObjectXDecRef(CrObject* obj)
+{
+	if (obj != NULL)
+		ObjectDecRef(obj);
+}
+#define CrObject_XDECREF(obj) ObjectXDecRef(CrObject_CAST(obj))
 
 /* Set the object type */
 static inline void ObjectSetType(CrObject* obj, CrTypeObject* type)
@@ -108,3 +156,41 @@ static inline void ObjectInit(CrObject* obj, CrTypeObject* type)
 	ObjectSetType(obj, type);
 	ObjectNewRef(obj);
 }
+
+/*
+ *	Type object flags
+*/
+
+/* Set if the type object is dynamically allocated */
+#define TPFLAGS_HEAPTYPE (1UL << 9)
+
+/* Set if the type allows subclassing */
+#define TPFLAGS_BASETYPE (1UL << 10)
+
+/* Set if the type is 'ready' -- fully initialized */
+#define TPFLAGS_READY (1UL << 12)
+
+/* Set while the type is being 'readied', to prevent recursive ready calls */
+#define TPFLAGS_READYING (1UL << 13)
+
+/* Objects support garbage collection */
+#define TPFLAGS_HAVE_GC (1UL << 14)
+
+/* These flags are used to determine if a type is a subclass. */
+#define TPFLAGS_LONG_SUBCLASS        (1UL << 24)
+#define TPFLAGS_LIST_SUBCLASS        (1UL << 25)
+#define TPFLAGS_TUPLE_SUBCLASS       (1UL << 26)
+#define TPFLAGS_BYTES_SUBCLASS       (1UL << 27)
+#define TPFLAGS_UNICODE_SUBCLASS     (1UL << 28)
+#define TPFLAGS_DICT_SUBCLASS        (1UL << 29)
+#define TPFLAGS_BASE_EXC_SUBCLASS    (1UL << 30)
+#define TPFLAGS_TYPE_SUBCLASS        (1UL << 31)
+
+#define TPFLAGS_DEFAULT 0
+
+static inline int CrType_HasFeature(CrTypeObject* type, unsigned long feature)
+{
+	return ((type->tp_flags & feature) != 0);
+}
+
+#define CrType_FastSubClass(type, flag) CrType_HasFeature(type, flag)

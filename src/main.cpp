@@ -1,12 +1,53 @@
 #include "Cronus.h"
 
+static void CrMain_Free()
+{
+	CrRuntime_Finalize();
+}
+
+static void CrMain_Header()
+{
+	printf("Cronus %s on %s\n", Cr_GetVersion(), PLATFORM);
+}
+
+static CrStatus CrMain_Init()
+{
+	CrStatus status;
+	status = Cr_Initialize();
+
+	if (CrStatus_Exception(status))
+	{
+		std::cout << "Error: " << status.error_msg << std::endl;
+		return status;
+	}
+
+	return status;
+}
+
+static int Cr_RunCronus(int *exitcode)
+{
+	CrInterpreterState* interp = CrInterpreterState_Get();
+
+	CrMain_Header();
+
+	return 0;
+}
+
 int Cr_RunMain()
 {
+	CrStatus status = CrMain_Init();
+
+	if (CrStatus_Exception(status))
+	{
+		CrMain_Free();
+		std::cout << "Error: " << status.error_msg << std::endl;
+		return status.exit_code;
+	}
+
 	int exitcode = 0;
 
-	CrIntObject* int_obj = (CrIntObject*)CrIntObject_FromInt(22);
-	CrStringObject* str_obj = (CrStringObject*)CrStringObject_FromString("Hello World!");
-	CrFloatObject* flt_obj = (CrFloatObject*)CrFloatObject_FromDouble(3.14);
+	Cr_RunCronus(&exitcode);
+	CrMain_Free();
 
 	return exitcode;
 }

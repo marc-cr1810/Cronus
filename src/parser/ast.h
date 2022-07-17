@@ -41,6 +41,15 @@ typedef enum class _unary_operator
 	USub
 } unaryop_type;
 
+typedef enum _cmpop {
+	Eq = 1, NotEq = 2, Lt = 3, LtE = 4, Gt = 5, GtE = 6, Is = 7, IsNot = 8,
+	In = 9, NotIn = 10
+} cmpop_type;
+
+typedef struct _arguments* arguments_type;
+typedef struct _arg* arg_type;
+typedef struct _keyword* keyword_type;
+
 /* AST node sequences */
 
 #define AST_SEQ_HEAD \
@@ -120,6 +129,16 @@ typedef struct
 	expr_type typed_elements[1];
 } ast_expr_seq;
 
+typedef struct {
+	AST_SEQ_HEAD;
+	arg_type typed_elements[1];
+} ast_arg_seq;
+
+typedef struct {
+	AST_SEQ_HEAD;
+	keyword_type typed_elements[1];
+} ast_keyword_seq;
+
 typedef struct
 {
 	AST_SEQ_HEAD;
@@ -133,7 +152,8 @@ enum class module_kind
 	Unknown_Kind = -1,
 	Module_Kind,
 	Interactive_Kind,
-	Expression_Kind
+	Expression_Kind,
+	FunctionType_Kind
 };
 
 struct _mod
@@ -182,6 +202,40 @@ struct _stmt
 	enum stmt_kind kind;
 	union
 	{
+		struct {
+			identifier name;
+			arguments_type args;
+			ast_stmt_seq* body;
+			ast_expr_seq* decorator_list;
+			expr_type returns;
+			string type_comment;
+		} FunctionDef;
+
+		struct {
+			identifier name;
+			arguments_type args;
+			ast_stmt_seq* body;
+			ast_expr_seq* decorator_list;
+			expr_type returns;
+			string type_comment;
+		} AsyncFunctionDef;
+
+		struct {
+			identifier name;
+			ast_expr_seq* bases;
+			ast_keyword_seq* keywords;
+			ast_stmt_seq* body;
+			ast_expr_seq* decorator_list;
+		} ClassDef;
+
+		struct {
+			expr_type value;
+		} Return;
+
+		struct {
+			ast_expr_seq* targets;
+		} Delete;
+
 		struct
 		{
 			expr_type target;
@@ -246,6 +300,35 @@ struct _expr
 	int end_col_offset;
 };
 
+struct _arguments {
+	ast_arg_seq* posonlyargs;
+	ast_arg_seq* args;
+	arg_type vararg;
+	ast_arg_seq* kwonlyargs;
+	ast_expr_seq* kw_defaults;
+	arg_type kwarg;
+	ast_expr_seq* defaults;
+};
+
+struct _arg {
+	identifier arg;
+	expr_type annotation;
+	string type_comment;
+	int lineno;
+	int col_offset;
+	int end_lineno;
+	int end_col_offset;
+};
+
+struct _keyword {
+	identifier arg;
+	expr_type value;
+	int lineno;
+	int col_offset;
+	int end_lineno;
+	int end_col_offset;
+};
+
 enum _type_ignore_kind { TypeIgnore_kind = 1 };
 struct _type_ignore
 {
@@ -259,3 +342,25 @@ struct _type_ignore
 		} TypeIgnore;
 	} v;
 };
+
+/* Create nodes */
+
+mod_type CrAST_Module(ast_stmt_seq* body, ast_type_ignore_seq* type_ignores);
+mod_type CrAST_Interactive(ast_stmt_seq* body);
+mod_type CrAST_FunctionType(ast_expr_seq* arg_types, expr_type returns);
+
+stmt_type CrAST_FunctionDef(identifier name, arguments_type args, ast_stmt_seq* body,
+	ast_expr_seq* decorator_list, expr_type returns, string type_comment, 
+	int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_AsyncFunctionDef(identifier name, arguments_type args, ast_stmt_seq* body,
+	ast_expr_seq* decorator_list, expr_type returns, string type_comment,
+	int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_ClassDef(identifier name, ast_expr_seq* bases, ast_keyword_seq* keywords, ast_stmt_seq* body, ast_expr_seq* decorator_list,
+	int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_Return(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_Delete(ast_expr_seq* targets, int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_Expr(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_Pass(int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_Constant(constant value, string kind, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_BinOp(expr_type left, operator_type op, expr_type right, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_UnaryOp(unaryop_type op, expr_type operand, int lineno, int col_offset, int end_lineno, int end_col_offset);

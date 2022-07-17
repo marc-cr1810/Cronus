@@ -244,6 +244,83 @@ stmt_type CrAST_Delete(ast_expr_seq* targets, int lineno, int col_offset, int en
 	return stmt;
 }
 
+stmt_type CrAST_Assign(ast_expr_seq* targets, expr_type value, string type_comment, 
+	int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	if (!value) {
+		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_Assign");
+		return NULL;
+	}
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::Assign_kind;
+	stmt->v.Assign.targets = targets;
+	stmt->v.Assign.value = value;
+	stmt->v.Assign.type_comment = type_comment;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_AugAssign(expr_type target, operator_type op, expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	if (!target) {
+		CrError_SetString(CrExc_ValueError, "field 'target' is required for CrAST_AugAssign");
+		return NULL;
+	}
+	if (!static_cast<int>(op)) {
+		CrError_SetString(CrExc_ValueError, "field 'op' is required for CrAST_AugAssign");
+		return NULL;
+	}
+	if (!value) {
+		CrError_SetString(CrExc_ValueError,	"field 'value' is required for CrAST_AugAssign");
+		return NULL;
+	}
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::AugAssign_kind;
+	stmt->v.AugAssign.target = target;
+	stmt->v.AugAssign.op = op;
+	stmt->v.AugAssign.value = value;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_AnnAssign(expr_type target, expr_type annotation, expr_type value, int simple, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	if (!target) {
+		CrError_SetString(CrExc_ValueError,	"field 'target' is required for CrAST_AnnAssign");
+		return NULL;
+	}
+	if (!annotation) {
+		CrError_SetString(CrExc_ValueError, "field 'annotation' is required for CrAST_AnnAssign");
+		return NULL;
+	}
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::AnnAssign_kind;
+	stmt->v.AnnAssign.target = target;
+	stmt->v.AnnAssign.annotation = annotation;
+	stmt->v.AnnAssign.value = value;
+	stmt->v.AnnAssign.simple = simple;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
 stmt_type CrAST_Expr(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
 {
 	if (!value)

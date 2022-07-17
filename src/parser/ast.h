@@ -236,11 +236,24 @@ struct _stmt
 			ast_expr_seq* targets;
 		} Delete;
 
-		struct
-		{
-			expr_type target;
-			expr_type expr;
+		struct {
+			ast_expr_seq* targets;
+			expr_type value;
+			string type_comment;
 		} Assign;
+
+		struct {
+			expr_type target;
+			operator_type op;
+			expr_type value;
+		} AugAssign;
+
+		struct {
+			expr_type target;
+			expr_type annotation;
+			expr_type value;
+			int simple;
+		} AnnAssign;
 
 		struct
 		{
@@ -359,6 +372,12 @@ stmt_type CrAST_ClassDef(identifier name, ast_expr_seq* bases, ast_keyword_seq* 
 	int lineno, int col_offset, int end_lineno, int end_col_offset);
 stmt_type CrAST_Return(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
 stmt_type CrAST_Delete(ast_expr_seq* targets, int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_Assign(ast_expr_seq* targets, expr_type value, string type_comment,
+	int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_AugAssign(expr_type target, operator_type op, expr_type value,
+	int lineno, int	col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_AnnAssign(expr_type target, expr_type annotation, expr_type value, int simple,
+	int lineno, int col_offset, int end_lineno, int	end_col_offset);
 stmt_type CrAST_Expr(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
 stmt_type CrAST_Pass(int lineno, int col_offset, int end_lineno, int end_col_offset);
 expr_type CrAST_Constant(constant value, string kind, int lineno, int col_offset, int end_lineno, int end_col_offset);

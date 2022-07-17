@@ -144,12 +144,14 @@
     <ClInclude Include="src\config.h" />
     <ClInclude Include="src\core\cronusrun.h" />
     <ClInclude Include="src\core\interpreter.h" />
+    <ClInclude Include="src\core\lifecycle.h" />
     <ClInclude Include="src\core\mem.h" />
     <ClInclude Include="src\core\error.h" />
     <ClInclude Include="src\core\runtime.h" />
     <ClInclude Include="src\core\status.h" />
     <ClInclude Include="src\core\thread.h" />
     <ClInclude Include="src\Cronus.h" />
+    <ClInclude Include="src\objects\baseobject.h" />
     <ClInclude Include="src\objects\floatobject.h" />
     <ClInclude Include="src\objects\intobject.h" />
     <ClInclude Include="src\objects\object.h" />
@@ -160,12 +162,14 @@
   <ItemGroup>
     <ClCompile Include="src\core\cronusrun.cpp" />
     <ClCompile Include="src\core\interpreter.cpp" />
+    <ClCompile Include="src\core\lifecycle.cpp" />
     <ClCompile Include="src\core\mem.cpp" />
     <ClCompile Include="src\core\error.cpp" />
     <ClCompile Include="src\core\runtime.cpp" />
     <ClCompile Include="src\core\status.cpp" />
     <ClCompile Include="src\core\thread.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\objects\baseobject.cpp" />
     <ClCompile Include="src\objects\floatobject.cpp" />
     <ClCompile Include="src\objects\intobject.cpp" />
     <ClCompile Include="src\objects\object.cpp" />

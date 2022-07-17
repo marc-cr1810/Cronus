@@ -2,6 +2,8 @@
 
 #include <objects/object.h>
 
+#include <core/status.h>
+
 typedef struct _intobject
 {
 	CrObject_VAR_HEAD;
@@ -15,3 +17,6 @@ extern CrTypeObject CrIntType;
 /* Convert a C++ int to a CrIntObject */
 CrObject* CrIntObject_FromInt(Cr_int32_t ival);
 CrObject* CrIntObject_FromString(const char* str, int base);
+
+/* Runtime lifecycle */
+CrStatus CrInt_InitTypes();

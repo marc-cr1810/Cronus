@@ -2,6 +2,8 @@
 
 #include "object.h"
 
+#include <core/status.h>
+
 typedef struct _stringobject
 {
 	CrObject_VAR_HEAD;
@@ -22,3 +24,6 @@ CrObject* CrStringObject_FromStringAndSize(const char* bytes, Cr_size_t size);
 
 /* API Functions */
 CrObject* CrString_Concat(CrObject* a, CrObject* b);
+
+/* Runtime lifecycle */
+CrStatus CrString_InitTypes();

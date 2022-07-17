@@ -62,16 +62,19 @@ typedef void (*destructor)(CrObject*);
 typedef struct _typeobject
 {
 	CrObject_VAR_HEAD;
-	const char* tp_name;		// CrObject type name
-	const char* tp_doc;			// Documentation string
+	const char* tp_name;			// CrObject type name
+	const char* tp_doc;				// Documentation string
 	size_t tp_size;
-	size_t tp_itemsize;			// For memory allocation
-	unsigned long tp_flags;		// Flags for specific features and behaviour
+	size_t tp_itemsize;				// For memory allocation
+	unsigned long tp_flags;			// Flags for specific features and behaviour
 
 	/* Methods to implement standard operations */
+
 	destructor tp_dealloc;
 
-	freefunc tp_free;			// Low-level free memory routine
+	
+	struct _typeobject* tp_base;	// Strong reference on a heap type, borrowed reference on a static type
+	freefunc tp_free;				// Low-level free memory routine
 } CrTypeObject;
 
 #define Cr_TYPE(ob)             (CrObject_CAST(ob)->ob_type)
@@ -136,6 +139,15 @@ static inline void ObjectXDecRef(CrObject* obj)
 }
 #define CrObject_XDECREF(obj) ObjectXDecRef(CrObject_CAST(obj))
 
+// Create a new strong reference to an object:
+// increment the reference count of the object and return the object.
+static CrObject* Object_NewRef(CrObject* obj);
+#define CrObject_NEWREF(obj) Object_NewRef(CrObject_CAST(obj));
+
+// Similar to Cr_NewRef(), but the object can be NULL.
+static CrObject* Object_XNewRef(CrObject* obj);
+#define CrObject_XNEWREF(obj) Object_XNewRef(CrObject_CAST(obj));
+
 /* Set the object type */
 static inline void ObjectSetType(CrObject* obj, CrTypeObject* type)
 {
@@ -156,6 +168,8 @@ static inline void ObjectInit(CrObject* obj, CrTypeObject* type)
 	ObjectSetType(obj, type);
 	ObjectNewRef(obj);
 }
+
+int CrType_Ready(CrTypeObject* type);
 
 /*
  *	Type object flags
@@ -194,3 +208,16 @@ static inline int CrType_HasFeature(CrTypeObject* type, unsigned long feature)
 }
 
 #define CrType_FastSubClass(type, flag) CrType_HasFeature(type, flag)
+
+/*
+ CrNullStruct is an object of undefined type which can be used in contexts
+ where NULL (null) is not suitable (since NULL often means 'error').
+
+ Don't forget to apply CrObject_NEWREF() when returning this value!!!
+ */
+
+extern CrObject CrNullStruct; // Do not use directly
+#define Cr_Null (&CrNullStruct)
+
+/* Macro for returning Cr_Null from a function */
+#define Cr_RETURN_NULL return CrObject_NEWREF(Cr_Null)

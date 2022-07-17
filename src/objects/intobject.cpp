@@ -17,6 +17,7 @@ CrTypeObject CrIntType = {
 	0,										// tp_itemsize
 	TPFLAGS_DEFAULT | TPFLAGS_BASETYPE,		// tp_flags
 	(destructor)int_dealloc,				// tp_dealloc
+	0,										// tp_base
 	Mem_Free								// tp_free
 };
 
@@ -32,4 +33,12 @@ CrObject* CrIntObject_FromString(const char* str, int base)
 	CrIntObject* obj = CrObject_NEW(CrIntObject, &CrIntType);
 	obj->ob_ival = std::stoi(str, nullptr, base);
 	return (CrObject*)obj;
+}
+
+CrStatus CrInt_InitTypes()
+{
+	if (CrType_Ready(&CrIntType) < 0)
+		return CrStatus_Error("can't init int type");
+
+	return CrStatus_Ok();
 }

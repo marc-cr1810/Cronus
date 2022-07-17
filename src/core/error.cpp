@@ -181,6 +181,7 @@ CrTypeObject CrExceptionType = {
 	TPFLAGS_DEFAULT | TPFLAGS_BASETYPE |	    // tp_flags
 		TPFLAGS_BASE_EXC_SUBCLASS,
 	0,										    // tp_dealloc
+	0,											// tp_base
 	Mem_Free								    // tp_free
 };
 

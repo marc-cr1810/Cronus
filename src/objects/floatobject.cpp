@@ -17,6 +17,7 @@ CrTypeObject CrFloatType = {
 	0,										// tp_itemsize
 	TPFLAGS_DEFAULT | TPFLAGS_BASETYPE,		// tp_flags
 	(destructor)float_dealloc,				// tp_dealloc
+	0,										// tp_base
 	Mem_Free								// tp_free
 };
 
@@ -25,4 +26,12 @@ CrObject* CrFloatObject_FromDouble(double dval)
 	CrFloatObject* obj = CrObject_NEW(CrFloatObject, &CrFloatType);
 	obj->ob_fval = dval;
 	return (CrObject*)obj;
+}
+
+CrStatus CrFloat_InitTypes()
+{
+	if (CrType_Ready(&CrFloatType) < 0)
+		return CrStatus_Error("can't init float type");
+
+	return CrStatus_Ok();
 }

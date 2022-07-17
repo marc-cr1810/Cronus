@@ -1,5 +1,7 @@
 #include "cronusrun.h"
 
+#include <core/lifecycle.h>
+
 static CrStatus CrCore_CreateInterpreter(CrRuntimeState* runtime, CrThreadState** tstate_p)
 {
 	CrInterpreterState* interp = CrInterpreter_New();
@@ -18,6 +20,9 @@ static CrStatus CrCore_Init(CrRuntimeState* runtime, CrThreadState** tstate_p)
 {
 	CrStatus status;
 	CrThreadState *tstate;
+
+	CrCore_InitTypes();
+
 	status = CrCore_CreateInterpreter(runtime, &tstate);
 	if (CrStatus_Exception(status))
 		return status;

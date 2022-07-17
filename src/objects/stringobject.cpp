@@ -52,6 +52,7 @@ CrTypeObject CrStringType = {
 	0,										// tp_itemsize
 	TPFLAGS_DEFAULT | TPFLAGS_BASETYPE,		// tp_flags
 	(destructor)string_dealloc,				// tp_dealloc
+	0,										// tp_base
 	Mem_Free								// tp_free
 };
 
@@ -101,4 +102,12 @@ CrObject* CrString_Concat(CrObject* a, CrObject* b)
 	}
 
 	return string_concat((CrStringObject*)a, b);
+}
+
+CrStatus CrString_InitTypes()
+{
+	if (CrType_Ready(&CrStringType) < 0)
+		return CrStatus_Error("can't init string type");
+
+	return CrStatus_Ok();
 }

@@ -321,6 +321,290 @@ stmt_type CrAST_AnnAssign(expr_type target, expr_type annotation, expr_type valu
 	return stmt;
 }
 
+stmt_type CrAST_For(expr_type target, expr_type iter, ast_stmt_seq* body, ast_stmt_seq* orelse, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	if (!target) {
+		CrError_SetString(CrExc_ValueError, "field 'target' is required for CrAST_For");
+		return NULL;
+	}
+	if (!iter) {
+		CrError_SetString(CrExc_ValueError, "field 'iter' is required for CrAST_For");
+		return NULL;
+	}
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::For_kind;
+	stmt->v.For.target = target;
+	stmt->v.For.iter = iter;
+	stmt->v.For.body = body;
+	stmt->v.For.orelse = orelse;
+	stmt->v.For.type_comment = type_comment;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_AsyncFor(expr_type target, expr_type iter, ast_stmt_seq* body, ast_stmt_seq* orelse, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	if (!target) {
+		CrError_SetString(CrExc_ValueError, "field 'target' is required for CrAST_AsyncFor");
+		return NULL;
+	}
+	if (!iter) {
+		CrError_SetString(CrExc_ValueError, "field 'iter' is required for CrAST_AsyncFor");
+		return NULL;
+	}
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::AsyncFor_kind;
+	stmt->v.AsyncFor.target = target;
+	stmt->v.AsyncFor.iter = iter;
+	stmt->v.AsyncFor.body = body;
+	stmt->v.AsyncFor.orelse = orelse;
+	stmt->v.AsyncFor.type_comment = type_comment;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_While(expr_type test, ast_stmt_seq* body, ast_stmt_seq* orelse, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	if (!test) {
+		CrError_SetString(CrExc_ValueError, "field 'test' is required for CrAST_While");
+		return NULL;
+	}
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::While_kind;
+	stmt->v.While.test = test;
+	stmt->v.While.body = body;
+	stmt->v.While.orelse = orelse;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_If(expr_type test, ast_stmt_seq* body, ast_stmt_seq* orelse, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	if (!test) {
+		CrError_SetString(CrExc_ValueError, "field 'test' is required for CrAST_If");
+		return NULL;
+	}
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::If_kind;
+	stmt->v.If.test = test;
+	stmt->v.If.body = body;
+	stmt->v.If.orelse = orelse;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_With(ast_withitem_seq* items, ast_stmt_seq* body, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::With_kind;
+	stmt->v.With.items = items;
+	stmt->v.With.body = body;
+	stmt->v.With.type_comment = type_comment;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_AsyncWith(ast_withitem_seq* items, ast_stmt_seq* body, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::AsyncWith_kind;
+	stmt->v.AsyncWith.items = items;
+	stmt->v.AsyncWith.body = body;
+	stmt->v.AsyncWith.type_comment = type_comment;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_Match(expr_type subject, ast_match_case_seq* cases, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type p;
+	if (!subject) {
+		CrError_SetString(CrExc_ValueError, "field 'subject' is required for CrAST_Match");
+		return NULL;
+	}
+	p = (stmt_type)Mem_Alloc(sizeof(*p));
+	if (!p)
+		return NULL;
+	p->kind = stmt_kind::Match_kind;
+	p->v.Match.subject = subject;
+	p->v.Match.cases = cases;
+	p->lineno = lineno;
+	p->col_offset = col_offset;
+	p->end_lineno = end_lineno;
+	p->end_col_offset = end_col_offset;
+	return p;
+}
+
+stmt_type CrAST_Raise(expr_type exc, expr_type cause, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::Raise_kind;
+	stmt->v.Raise.exc = exc;
+	stmt->v.Raise.cause = cause;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_Try(ast_stmt_seq* body, ast_excepthandler_seq* handlers, ast_stmt_seq* orelse, ast_stmt_seq* finalbody, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::Try_kind;
+	stmt->v.Try.body = body;
+	stmt->v.Try.handlers = handlers;
+	stmt->v.Try.orelse = orelse;
+	stmt->v.Try.finalbody = finalbody;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_TryStar(ast_stmt_seq* body, ast_excepthandler_seq* handlers, ast_stmt_seq* orelse, ast_stmt_seq* finalbody, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::TryStar_kind;
+	stmt->v.TryStar.body = body;
+	stmt->v.TryStar.handlers = handlers;
+	stmt->v.TryStar.orelse = orelse;
+	stmt->v.TryStar.finalbody = finalbody;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_Assert(expr_type test, expr_type msg, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	if (!test) {
+		CrError_SetString(CrExc_ValueError, "field 'test' is required for CrAST_Assert");
+		return NULL;
+	}
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::Assert_kind;
+	stmt->v.Assert.test = test;
+	stmt->v.Assert.msg = msg;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_Import(ast_alias_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::Import_kind;
+	stmt->v.Import.names = names;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_ImportFrom(identifier module, ast_alias_seq* names, int level, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::ImportFrom_kind;
+	stmt->v.ImportFrom.module = module;
+	stmt->v.ImportFrom.names = names;
+	stmt->v.ImportFrom.level = level;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_Global(ast_identifier_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::Global_kind;
+	stmt->v.Global.names = names;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_Nonlocal(ast_identifier_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type p;
+	p = (stmt_type)Mem_Alloc(sizeof(*p));
+	if (!p)
+		return NULL;
+	p->kind = stmt_kind::Nonlocal_kind;
+	p->v.Nonlocal.names = names;
+	p->lineno = lineno;
+	p->col_offset = col_offset;
+	p->end_lineno = end_lineno;
+	p->end_col_offset = end_col_offset;
+	return p;
+}
+
 stmt_type CrAST_Expr(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
 {
 	if (!value)
@@ -348,6 +632,34 @@ stmt_type CrAST_Pass(int lineno, int col_offset, int end_lineno, int end_col_off
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::Pass_kind;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_Break(int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	stmt = (stmt_type)Mem_Alloc(sizeof(stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::Break_kind;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
+}
+
+stmt_type CrAST_Continue(int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	stmt_type stmt;
+	stmt = (stmt_type)Mem_Alloc(sizeof(stmt));
+	if (!stmt)
+		return NULL;
+	stmt->kind = stmt_kind::Continue_kind;
 	stmt->lineno = lineno;
 	stmt->col_offset = col_offset;
 	stmt->end_lineno = end_lineno;

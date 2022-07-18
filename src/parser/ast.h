@@ -46,9 +46,15 @@ typedef enum _cmpop {
 	In = 9, NotIn = 10
 } cmpop_type;
 
+typedef struct _comprehension* comprehension_type;
+typedef struct _excepthandler* excepthandler_type;
 typedef struct _arguments* arguments_type;
 typedef struct _arg* arg_type;
 typedef struct _keyword* keyword_type;
+typedef struct _alias* alias_type;
+typedef struct _withitem* withitem_type;
+typedef struct _match_case* match_case_type;
+typedef struct _pattern* pattern_type;
 
 /* AST node sequences */
 
@@ -131,6 +137,21 @@ typedef struct
 
 typedef struct {
 	AST_SEQ_HEAD;
+	comprehension_type typed_elements[1];
+} ast_comprehension_seq;
+
+typedef struct {
+	AST_SEQ_HEAD;
+	excepthandler_type typed_elements[1];
+} ast_excepthandler_seq;
+
+typedef struct {
+	AST_SEQ_HEAD;
+	arguments_type typed_elements[1];
+} ast_arguments_seq;
+
+typedef struct {
+	AST_SEQ_HEAD;
 	arg_type typed_elements[1];
 } ast_arg_seq;
 
@@ -138,6 +159,26 @@ typedef struct {
 	AST_SEQ_HEAD;
 	keyword_type typed_elements[1];
 } ast_keyword_seq;
+
+typedef struct {
+	AST_SEQ_HEAD;
+	alias_type typed_elements[1];
+} ast_alias_seq;
+
+typedef struct {
+	AST_SEQ_HEAD;
+	withitem_type typed_elements[1];
+} ast_withitem_seq;
+
+typedef struct {
+	AST_SEQ_HEAD;
+	match_case_type typed_elements[1];
+} ast_match_case_seq;
+
+typedef struct {
+	AST_SEQ_HEAD;
+	pattern_type typed_elements[1];
+} ast_pattern_seq;
 
 typedef struct
 {
@@ -185,16 +226,16 @@ struct _mod
 	} v;
 };
 
-enum class stmt_kind
+enum class stmt_kind 
 {
 	FunctionDef_kind = 1, AsyncFunctionDef_kind = 2, ClassDef_kind = 3,
 	Return_kind = 4, Delete_kind = 5, Assign_kind = 6,
 	AugAssign_kind = 7, AnnAssign_kind = 8, For_kind = 9,
 	AsyncFor_kind = 10, While_kind = 11, If_kind = 12, With_kind = 13,
-	AsyncWith_kind = 14, Raise_kind = 15, Try_kind = 16,
-	Assert_kind = 17, Import_kind = 18, ImportFrom_kind = 19,
-	Global_kind = 20, Nonlocal_kind = 21, Expr_kind = 22, Pass_kind = 23,
-	Break_kind = 24, Continue_kind = 25
+	AsyncWith_kind = 14, Match_kind = 15, Raise_kind = 16, Try_kind = 17,
+	TryStar_kind = 18, Assert_kind = 19, Import_kind = 20,
+	ImportFrom_kind = 21, Global_kind = 22, Nonlocal_kind = 23,
+	Expr_kind = 24, Pass_kind = 25, Break_kind = 26, Continue_kind = 27
 };
 
 struct _stmt
@@ -255,8 +296,94 @@ struct _stmt
 			int simple;
 		} AnnAssign;
 
-		struct
-		{
+		struct {
+			expr_type target;
+			expr_type iter;
+			ast_stmt_seq* body;
+			ast_stmt_seq* orelse;
+			string type_comment;
+		} For;
+
+		struct {
+			expr_type target;
+			expr_type iter;
+			ast_stmt_seq* body;
+			ast_stmt_seq* orelse;
+			string type_comment;
+		} AsyncFor;
+
+		struct {
+			expr_type test;
+			ast_stmt_seq* body;
+			ast_stmt_seq* orelse;
+		} While;
+
+		struct {
+			expr_type test;
+			ast_stmt_seq* body;
+			ast_stmt_seq* orelse;
+		} If;
+
+		struct {
+			ast_withitem_seq* items;
+			ast_stmt_seq* body;
+			string type_comment;
+		} With;
+
+		struct {
+			ast_withitem_seq* items;
+			ast_stmt_seq* body;
+			string type_comment;
+		} AsyncWith;
+
+		struct {
+			expr_type subject;
+			ast_match_case_seq* cases;
+		} Match;
+
+		struct {
+			expr_type exc;
+			expr_type cause;
+		} Raise;
+
+		struct {
+			ast_stmt_seq* body;
+			ast_excepthandler_seq* handlers;
+			ast_stmt_seq* orelse;
+			ast_stmt_seq* finalbody;
+		} Try;
+
+		struct {
+			ast_stmt_seq* body;
+			ast_excepthandler_seq* handlers;
+			ast_stmt_seq* orelse;
+			ast_stmt_seq* finalbody;
+		} TryStar;
+
+		struct {
+			expr_type test;
+			expr_type msg;
+		} Assert;
+
+		struct {
+			ast_alias_seq* names;
+		} Import;
+
+		struct {
+			identifier module;
+			ast_alias_seq* names;
+			int level;
+		} ImportFrom;
+
+		struct {
+			ast_identifier_seq* names;
+		} Global;
+
+		struct {
+			ast_identifier_seq* names;
+		} Nonlocal;
+
+		struct {
 			expr_type value;
 		} Expr;
 	} v;
@@ -313,6 +440,29 @@ struct _expr
 	int end_col_offset;
 };
 
+struct _comprehension {
+	expr_type target;
+	expr_type iter;
+	ast_expr_seq* ifs;
+	int is_async;
+};
+
+enum _excepthandler_kind { ExceptHandler_kind = 1 };
+struct _excepthandler {
+	enum _excepthandler_kind kind;
+	union {
+		struct {
+			expr_type type;
+			identifier name;
+			ast_stmt_seq* body;
+		} ExceptHandler;
+	} v;
+	int lineno;
+	int col_offset;
+	int end_lineno;
+	int end_col_offset;
+};
+
 struct _arguments {
 	ast_arg_seq* posonlyargs;
 	ast_arg_seq* args;
@@ -336,6 +486,80 @@ struct _arg {
 struct _keyword {
 	identifier arg;
 	expr_type value;
+	int lineno;
+	int col_offset;
+	int end_lineno;
+	int end_col_offset;
+};
+
+struct _alias {
+	identifier name;
+	identifier asname;
+	int lineno;
+	int col_offset;
+	int end_lineno;
+	int end_col_offset;
+};
+
+struct _withitem {
+	expr_type context_expr;
+	expr_type optional_vars;
+};
+
+struct _match_case {
+	pattern_type pattern;
+	expr_type guard;
+	ast_stmt_seq* body;
+};
+
+enum _pattern_kind {
+	MatchValue_kind = 1, MatchSingleton_kind = 2,
+	MatchSequence_kind = 3, MatchMapping_kind = 4,
+	MatchClass_kind = 5, MatchStar_kind = 6, MatchAs_kind = 7,
+	MatchOr_kind = 8
+};
+struct _pattern {
+	enum _pattern_kind kind;
+	union {
+		struct {
+			expr_type value;
+		} MatchValue;
+
+		struct {
+			constant value;
+		} MatchSingleton;
+
+		struct {
+			ast_pattern_seq* patterns;
+		} MatchSequence;
+
+		struct {
+			ast_expr_seq* keys;
+			ast_pattern_seq* patterns;
+			identifier rest;
+		} MatchMapping;
+
+		struct {
+			expr_type cls;
+			ast_pattern_seq* patterns;
+			ast_identifier_seq* kwd_attrs;
+			ast_pattern_seq* kwd_patterns;
+		} MatchClass;
+
+		struct {
+			identifier name;
+		} MatchStar;
+
+		struct {
+			pattern_type pattern;
+			identifier name;
+		} MatchAs;
+
+		struct {
+			ast_pattern_seq* patterns;
+		} MatchOr;
+
+	} v;
 	int lineno;
 	int col_offset;
 	int end_lineno;
@@ -378,8 +602,35 @@ stmt_type CrAST_AugAssign(expr_type target, operator_type op, expr_type value,
 	int lineno, int	col_offset, int end_lineno, int end_col_offset);
 stmt_type CrAST_AnnAssign(expr_type target, expr_type annotation, expr_type value, int simple,
 	int lineno, int col_offset, int end_lineno, int	end_col_offset);
+stmt_type CrAST_For(expr_type target, expr_type iter, ast_stmt_seq* body, ast_stmt_seq* orelse, string type_comment,
+	int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_AsyncFor(expr_type target, expr_type iter, ast_stmt_seq* body, ast_stmt_seq* orelse, string type_comment,
+	int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_While(expr_type test, ast_stmt_seq* body, ast_stmt_seq* orelse, 
+	int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_If(expr_type test, ast_stmt_seq* body, ast_stmt_seq* orelse,
+	int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_With(ast_withitem_seq* items, ast_stmt_seq* body, string type_comment, 
+	int lineno, int col_offset, int end_lineno, int	end_col_offset);
+stmt_type CrAST_AsyncWith(ast_withitem_seq* items, ast_stmt_seq* body, string type_comment,
+	int lineno, int col_offset, int end_lineno, int	end_col_offset);
+stmt_type CrAST_Match(expr_type subject, ast_match_case_seq* cases,
+	int lineno, int	col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_Raise(expr_type exc, expr_type cause, int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_Try(ast_stmt_seq* body, ast_excepthandler_seq* handlers, ast_stmt_seq* orelse, ast_stmt_seq* finalbody,
+	int lineno, int	col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_TryStar(ast_stmt_seq* body, ast_excepthandler_seq* handlers, ast_stmt_seq* orelse, ast_stmt_seq* finalbody,
+	int lineno, int	col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_Assert(expr_type test, expr_type msg, int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_Import(ast_alias_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_ImportFrom(identifier module, ast_alias_seq* names, int level, int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_Global(ast_identifier_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_Nonlocal(ast_identifier_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset);
 stmt_type CrAST_Expr(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
 stmt_type CrAST_Pass(int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_Constant(constant value, string kind, int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_Break(int lineno, int col_offset, int end_lineno, int end_col_offset);
+stmt_type CrAST_Continue(int lineno, int col_offset, int end_lineno, int end_col_offset);
+
 expr_type CrAST_BinOp(expr_type left, operator_type op, expr_type right, int lineno, int col_offset, int end_lineno, int end_col_offset);
 expr_type CrAST_UnaryOp(unaryop_type op, expr_type operand, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_Constant(constant value, string kind, int lineno, int col_offset, int end_lineno, int end_col_offset);

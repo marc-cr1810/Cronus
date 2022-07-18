@@ -453,22 +453,22 @@ stmt_type CrAST_AsyncWith(ast_withitem_seq* items, ast_stmt_seq* body, string ty
 
 stmt_type CrAST_Match(expr_type subject, ast_match_case_seq* cases, int lineno, int col_offset, int end_lineno, int end_col_offset)
 {
-	stmt_type p;
+	stmt_type stmt;
 	if (!subject) {
 		CrError_SetString(CrExc_ValueError, "field 'subject' is required for CrAST_Match");
 		return NULL;
 	}
-	p = (stmt_type)Mem_Alloc(sizeof(*p));
-	if (!p)
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
 		return NULL;
-	p->kind = stmt_kind::Match_kind;
-	p->v.Match.subject = subject;
-	p->v.Match.cases = cases;
-	p->lineno = lineno;
-	p->col_offset = col_offset;
-	p->end_lineno = end_lineno;
-	p->end_col_offset = end_col_offset;
-	return p;
+	stmt->kind = stmt_kind::Match_kind;
+	stmt->v.Match.subject = subject;
+	stmt->v.Match.cases = cases;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
 }
 
 stmt_type CrAST_Raise(expr_type exc, expr_type cause, int lineno, int col_offset, int end_lineno, int end_col_offset)
@@ -592,17 +592,17 @@ stmt_type CrAST_Global(ast_identifier_seq* names, int lineno, int col_offset, in
 
 stmt_type CrAST_Nonlocal(ast_identifier_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset)
 {
-	stmt_type p;
-	p = (stmt_type)Mem_Alloc(sizeof(*p));
-	if (!p)
+	stmt_type stmt;
+	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	if (!stmt)
 		return NULL;
-	p->kind = stmt_kind::Nonlocal_kind;
-	p->v.Nonlocal.names = names;
-	p->lineno = lineno;
-	p->col_offset = col_offset;
-	p->end_lineno = end_lineno;
-	p->end_col_offset = end_col_offset;
-	return p;
+	stmt->kind = stmt_kind::Nonlocal_kind;
+	stmt->v.Nonlocal.names = names;
+	stmt->lineno = lineno;
+	stmt->col_offset = col_offset;
+	stmt->end_lineno = end_lineno;
+	stmt->end_col_offset = end_col_offset;
+	return stmt;
 }
 
 stmt_type CrAST_Expr(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
@@ -667,20 +667,19 @@ stmt_type CrAST_Continue(int lineno, int col_offset, int end_lineno, int end_col
 	return stmt;
 }
 
-expr_type CrAST_Constant(constant value, string kind, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_BoolOp(boolop_type op, ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset)
 {
-	if (!value)
-	{
-		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_Constant");
+	expr_type expr;
+	if (!op) {
+		CrError_SetString(CrExc_ValueError, "field 'op' is required for CrAST_BoolOp");
 		return NULL;
 	}
-	expr_type expr;
 	expr = (expr_type)Mem_Alloc(sizeof(*expr));
 	if (!expr)
 		return NULL;
-	expr->kind = expr_kind::Constant_kind;
-	expr->v.Constant.value = value;
-	expr->v.Constant.kind = kind;
+	expr->kind = expr_kind::BoolOp_kind;
+	expr->v.BoolOp.op = op;
+	expr->v.BoolOp.values = values;
 	expr->lineno = lineno;
 	expr->col_offset = col_offset;
 	expr->end_lineno = end_lineno;
@@ -710,9 +709,9 @@ expr_type CrAST_BinOp(expr_type left, operator_type op, expr_type right, int lin
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::BinOp_kind;
-	expr->v.BinaryOp.left = left;
-	expr->v.BinaryOp.op = op;
-	expr->v.BinaryOp.right = right;
+	expr->v.BinOp.left = left;
+	expr->v.BinOp.op = op;
+	expr->v.BinOp.right = right;
 	expr->lineno = lineno;
 	expr->col_offset = col_offset;
 	expr->end_lineno = end_lineno;
@@ -739,6 +738,516 @@ expr_type CrAST_UnaryOp(unaryop_type op, expr_type operand, int lineno, int col_
 	expr->kind = expr_kind::UnaryOp_kind;
 	expr->v.UnaryOp.op = op;
 	expr->v.UnaryOp.operand = operand;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_NamedExpr(expr_type target, expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!target) {
+		CrError_SetString(CrExc_ValueError, "field 'target' is required for CrAST_NamedExpr");
+		return NULL;
+	}
+	if (!value) {
+		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_NamedExpr");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::NamedExpr_kind;
+	expr->v.NamedExpr.target = target;
+	expr->v.NamedExpr.value = value;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_Lambda(arguments_type args, expr_type body, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!args) {
+		CrError_SetString(CrExc_ValueError, "field 'args' is required for CrAST_Lambda");
+		return NULL;
+	}
+	if (!body) {
+		CrError_SetString(CrExc_ValueError, "field 'body' is required for CrAST_Lambda");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::Lambda_kind;
+	expr->v.Lambda.args = args;
+	expr->v.Lambda.body = body;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_IfExp(expr_type test, expr_type body, expr_type orelse, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!test) {
+		CrError_SetString(CrExc_ValueError, "field 'test' is required for CrAST_IfExp");
+		return NULL;
+	}
+	if (!body) {
+		CrError_SetString(CrExc_ValueError, "field 'body' is required for CrAST_IfExp");
+		return NULL;
+	}
+	if (!orelse) {
+		CrError_SetString(CrExc_ValueError, "field 'orelse' is required for CrAST_IfExp");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::IfExp_kind;
+	expr->v.IfExp.test = test;
+	expr->v.IfExp.body = body;
+	expr->v.IfExp.orelse = orelse;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_Dict(ast_expr_seq* keys, ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::Dict_kind;
+	expr->v.Dict.keys = keys;
+	expr->v.Dict.values = values;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_Set(ast_expr_seq* elts, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::Set_kind;
+	expr->v.Set.elts = elts;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_ListComp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!elt) {
+		CrError_SetString(CrExc_ValueError, "field 'elt' is required for CrAST_ListComp");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::ListComp_kind;
+	expr->v.ListComp.elt = elt;
+	expr->v.ListComp.generators = generators;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_SetComp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!elt) {
+		CrError_SetString(CrExc_ValueError, "field 'elt' is required for CrAST_SetComp");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::SetComp_kind;
+	expr->v.SetComp.elt = elt;
+	expr->v.SetComp.generators = generators;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_DictComp(expr_type key, expr_type value, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!key) {
+		CrError_SetString(CrExc_ValueError,
+			"field 'key' is required for CrAST_DictComp");
+		return NULL;
+	}
+	if (!value) {
+		CrError_SetString(CrExc_ValueError,
+			"field 'value' is required for CrAST_DictComp");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::DictComp_kind;
+	expr->v.DictComp.key = key;
+	expr->v.DictComp.value = value;
+	expr->v.DictComp.generators = generators;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_GeneratorExp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!elt) {
+		CrError_SetString(CrExc_ValueError, "field 'elt' is required for CrAST_GeneratorExp");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::GeneratorExp_kind;
+	expr->v.GeneratorExp.elt = elt;
+	expr->v.GeneratorExp.generators = generators;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_Await(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!value) {
+		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_Await");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::Await_kind;
+	expr->v.Await.value = value;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_Yield(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::Yield_kind;
+	expr->v.Yield.value = value;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_YieldFrom(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!value) {
+		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_YieldFrom");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::YieldFrom_kind;
+	expr->v.YieldFrom.value = value;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_Compare(expr_type left, ast_int_seq* ops, ast_expr_seq* comparators, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!left) {
+		CrError_SetString(CrExc_ValueError, "field 'left' is required for CrAST_Compare");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::Compare_kind;
+	expr->v.Compare.left = left;
+	expr->v.Compare.ops = ops;
+	expr->v.Compare.comparators = comparators;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_Call(expr_type func, ast_expr_seq* args, ast_keyword_seq* keywords, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!func) {
+		CrError_SetString(CrExc_ValueError, "field 'func' is required for CrAST_Call");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::Call_kind;
+	expr->v.Call.func = func;
+	expr->v.Call.args = args;
+	expr->v.Call.keywords = keywords;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_FormattedValue(expr_type value, int conversion, expr_type format_spec, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!value) {
+		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_FormattedValue");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::FormattedValue_kind;
+	expr->v.FormattedValue.value = value;
+	expr->v.FormattedValue.conversion = conversion;
+	expr->v.FormattedValue.format_spec = format_spec;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_JoinedStr(ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::JoinedStr_kind;
+	expr->v.JoinedStr.values = values;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_Constant(constant value, string kind, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	if (!value)
+	{
+		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_Constant");
+		return NULL;
+	}
+	expr_type expr;
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::Constant_kind;
+	expr->v.Constant.value = value;
+	expr->v.Constant.kind = kind;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_Attribute(expr_type value, identifier attr, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!value) {
+		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_Attribute");
+		return NULL;
+	}
+	if (!attr) {
+		CrError_SetString(CrExc_ValueError, "field 'attr' is required for CrAST_Attribute");
+		return NULL;
+	}
+	if (!ctx) {
+		CrError_SetString(CrExc_ValueError, "field 'ctx' is required for CrAST_Attribute");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::Attribute_kind;
+	expr->v.Attribute.value = value;
+	expr->v.Attribute.attr = attr;
+	expr->v.Attribute.ctx = ctx;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_Subscript(expr_type value, expr_type slice, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!value) {
+		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_Subscript");
+		return NULL;
+	}
+	if (!slice) {
+		CrError_SetString(CrExc_ValueError, "field 'slice' is required for CrAST_Subscript");
+		return NULL;
+	}
+	if (!ctx) {
+		CrError_SetString(CrExc_ValueError, "field 'ctx' is required for CrAST_Subscript");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::Subscript_kind;
+	expr->v.Subscript.value = value;
+	expr->v.Subscript.slice = slice;
+	expr->v.Subscript.ctx = ctx;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_Starred(expr_type value, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!value) {
+		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_Starred");
+		return NULL;
+	}
+	if (!ctx) {
+		CrError_SetString(CrExc_ValueError, "field 'ctx' is required for CrAST_Starred");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::Starred_kind;
+	expr->v.Starred.value = value;
+	expr->v.Starred.ctx = ctx;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_Name(identifier id, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!id) {
+		CrError_SetString(CrExc_ValueError, "field 'id' is required for CrAST_Name");
+		return NULL;
+	}
+	if (!ctx) {
+		CrError_SetString(CrExc_ValueError, "field 'ctx' is required for CrAST_Name");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::Name_kind;
+	expr->v.Name.id = id;
+	expr->v.Name.ctx = ctx;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_List(ast_expr_seq* elts, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!ctx) {
+		CrError_SetString(CrExc_ValueError, "field 'ctx' is required for CrAST_List");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::List_kind;
+	expr->v.List.elts = elts;
+	expr->v.List.ctx = ctx;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_Tuple(ast_expr_seq* elts, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	if (!ctx) {
+		CrError_SetString(CrExc_ValueError, "field 'ctx' is required for CrAST_Tuple");
+		return NULL;
+	}
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::Tuple_kind;
+	expr->v.Tuple.elts = elts;
+	expr->v.Tuple.ctx = ctx;
+	expr->lineno = lineno;
+	expr->col_offset = col_offset;
+	expr->end_lineno = end_lineno;
+	expr->end_col_offset = end_col_offset;
+	return expr;
+}
+
+expr_type CrAST_Slice(expr_type lower, expr_type upper, expr_type step, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	expr_type expr;
+	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	if (!expr)
+		return NULL;
+	expr->kind = expr_kind::Slice_kind;
+	expr->v.Slice.lower = lower;
+	expr->v.Slice.upper = upper;
+	expr->v.Slice.step = step;
 	expr->lineno = lineno;
 	expr->col_offset = col_offset;
 	expr->end_lineno = end_lineno;

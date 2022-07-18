@@ -12,9 +12,26 @@ typedef struct _mod* mod_type;
 typedef struct _stmt* stmt_type;
 typedef struct _expr* expr_type;
 
-typedef struct _type_ignore* type_ignore_ty;
+typedef enum _expr_context { Load = 1, Store = 2, Del = 3 } expr_context_type;
+
+typedef struct _comprehension* comprehension_type;
+typedef struct _excepthandler* excepthandler_type;
+typedef struct _arguments* arguments_type;
+typedef struct _arg* arg_type;
+typedef struct _keyword* keyword_type;
+typedef struct _alias* alias_type;
+typedef struct _withitem* withitem_type;
+typedef struct _match_case* match_case_type;
+typedef struct _pattern* pattern_type;
+
+typedef struct _type_ignore* type_ignore_type;
 
 /* Operator types */
+
+typedef enum _boolop { 
+	And = 1, 
+	Or = 2 
+} boolop_type;
 
 typedef enum class _operator
 {
@@ -45,16 +62,6 @@ typedef enum _cmpop {
 	Eq = 1, NotEq = 2, Lt = 3, LtE = 4, Gt = 5, GtE = 6, Is = 7, IsNot = 8,
 	In = 9, NotIn = 10
 } cmpop_type;
-
-typedef struct _comprehension* comprehension_type;
-typedef struct _excepthandler* excepthandler_type;
-typedef struct _arguments* arguments_type;
-typedef struct _arg* arg_type;
-typedef struct _keyword* keyword_type;
-typedef struct _alias* alias_type;
-typedef struct _withitem* withitem_type;
-typedef struct _match_case* match_case_type;
-typedef struct _pattern* pattern_type;
 
 /* AST node sequences */
 
@@ -183,7 +190,7 @@ typedef struct {
 typedef struct
 {
 	AST_SEQ_HEAD;
-	type_ignore_ty typed_elements[1];
+	type_ignore_type typed_elements[1];
 } ast_type_ignore_seq;
 
 /* AST node types */
@@ -410,29 +417,144 @@ struct _expr
 	enum expr_kind kind;
 	union
 	{
-		struct
-		{
+		struct {
+			boolop_type op;
+			ast_expr_seq* values;
+		} BoolOp;
+
+		struct {
 			expr_type left;
 			operator_type op;
 			expr_type right;
-		} BinaryOp;
+		} BinOp;
 
-		struct
-		{
-			expr_type operand;
+		struct {
 			unaryop_type op;
+			expr_type operand;
 		} UnaryOp;
 
-		struct
-		{
+		struct {
+			expr_type target;
+			expr_type value;
+		} NamedExpr;
+
+		struct {
+			arguments_type args;
+			expr_type body;
+		} Lambda;
+
+		struct {
+			expr_type test;
+			expr_type body;
+			expr_type orelse;
+		} IfExp;
+
+		struct {
+			ast_expr_seq* keys;
+			ast_expr_seq* values;
+		} Dict;
+
+		struct {
+			ast_expr_seq* elts;
+		} Set;
+
+		struct {
+			expr_type elt;
+			ast_comprehension_seq* generators;
+		} ListComp;
+
+		struct {
+			expr_type elt;
+			ast_comprehension_seq* generators;
+		} SetComp;
+
+		struct {
+			expr_type key;
+			expr_type value;
+			ast_comprehension_seq* generators;
+		} DictComp;
+
+		struct {
+			expr_type elt;
+			ast_comprehension_seq* generators;
+		} GeneratorExp;
+
+		struct {
+			expr_type value;
+		} Await;
+
+		struct {
+			expr_type value;
+		} Yield;
+
+		struct {
+			expr_type value;
+		} YieldFrom;
+
+		struct {
+			expr_type left;
+			ast_int_seq* ops;
+			ast_expr_seq* comparators;
+		} Compare;
+
+		struct {
+			expr_type func;
+			ast_expr_seq* args;
+			ast_keyword_seq* keywords;
+		} Call;
+
+		struct {
+			expr_type value;
+			int conversion;
+			expr_type format_spec;
+		} FormattedValue;
+
+		struct {
+			ast_expr_seq* values;
+		} JoinedStr;
+
+		struct {
 			constant value;
 			string kind;
 		} Constant;
 
-		struct
-		{
+		struct {
+			expr_type value;
+			identifier attr;
+			expr_context_type ctx;
+		} Attribute;
+
+		struct {
+			expr_type value;
+			expr_type slice;
+			expr_context_type ctx;
+		} Subscript;
+
+		struct {
+			expr_type value;
+			expr_context_type ctx;
+		} Starred;
+
+		struct {
 			identifier id;
+			expr_context_type ctx;
 		} Name;
+
+		struct {
+			ast_expr_seq* elts;
+			expr_context_type ctx;
+		} List;
+
+		struct {
+			ast_expr_seq* elts;
+			expr_context_type ctx;
+		} Tuple;
+
+		struct {
+			expr_type lower;
+			expr_type upper;
+			expr_type step;
+		} Slice;
 	} v;
 	int lineno;
 	int col_offset;
@@ -631,6 +753,35 @@ stmt_type CrAST_Pass(int lineno, int col_offset, int end_lineno, int end_col_off
 stmt_type CrAST_Break(int lineno, int col_offset, int end_lineno, int end_col_offset);
 stmt_type CrAST_Continue(int lineno, int col_offset, int end_lineno, int end_col_offset);
 
+expr_type CrAST_BoolOp(boolop_type op, ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset);
 expr_type CrAST_BinOp(expr_type left, operator_type op, expr_type right, int lineno, int col_offset, int end_lineno, int end_col_offset);
 expr_type CrAST_UnaryOp(unaryop_type op, expr_type operand, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_NamedExpr(expr_type target, expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_Lambda(arguments_type args, expr_type body, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_IfExp(expr_type test, expr_type body, expr_type orelse, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_Dict(ast_expr_seq* keys, ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_Set(ast_expr_seq* elts, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_ListComp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_SetComp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_DictComp(expr_type key, expr_type value, ast_comprehension_seq* generators,
+	int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_GeneratorExp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_Await(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_Yield(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_YieldFrom(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_Compare(expr_type left, ast_int_seq* ops, ast_expr_seq* comparators,
+	int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_Call(expr_type func, ast_expr_seq* args, ast_keyword_seq* keywords,
+	int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_FormattedValue(expr_type value, int conversion, expr_type format_spec,
+	int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_JoinedStr(ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset);
 expr_type CrAST_Constant(constant value, string kind, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_Attribute(expr_type value, identifier attr, expr_context_type ctx, 
+	int	lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_Subscript(expr_type value, expr_type slice, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_Starred(expr_type value, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_Name(identifier id, expr_context_type ctx, int lineno, int col_offset, int	end_lineno, int end_col_offset);
+expr_type CrAST_List(ast_expr_seq* elts, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_Tuple(ast_expr_seq* elts, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_Slice(expr_type lower, expr_type upper, expr_type step, int lineno, int col_offset, int end_lineno, int end_col_offset);

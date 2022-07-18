@@ -84,7 +84,8 @@ static void error_print_exception(CrThreadState* tstate)
 	if (error_occured(tstate))
 	{
 		CrStringObject* msg = (CrStringObject*)tstate->curr_exc_value;
-		printf(msg->ob_svar);
+		if (msg != NULL)
+			printf(msg->ob_svar);
 
 		Cr_Exit(((CrExceptionObject*)tstate->curr_exc_type)->exitcode);
 	}

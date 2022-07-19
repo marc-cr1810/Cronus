@@ -104,6 +104,16 @@ CrObject* CrString_Concat(CrObject* a, CrObject* b)
 	return string_concat((CrStringObject*)a, b);
 }
 
+char* CrString_ToString(CrObject* str)
+{
+	if (!CrString_Check(str))
+	{
+		CrError_SetString(CrExc_TypeError, "type is not a string");
+		return NULL;
+	}
+	return ((CrStringObject*)str)->ob_svar;
+}
+
 CrStatus CrString_InitTypes()
 {
 	if (CrType_Ready(&CrStringType) < 0)

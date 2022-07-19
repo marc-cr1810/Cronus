@@ -24,6 +24,7 @@ CrObject* CrStringObject_FromStringAndSize(const char* bytes, Cr_size_t size);
 
 /* API Functions */
 CrObject* CrString_Concat(CrObject* a, CrObject* b);
+char* CrString_ToString(CrObject* str);
 
 /* Runtime lifecycle */
 CrStatus CrString_InitTypes();

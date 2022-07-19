@@ -5,6 +5,7 @@
 #include <objects/stringobject.h>
 #include <objects/intobject.h>
 #include <objects/listobject.h>
+#include <objects/floatobject.h>
 
 /* Memoization functions */
 
@@ -337,6 +338,112 @@ Token* CrGen_GetLastNonWhitespaceToken(Parser* p)
 		}
 	}
 	return token;
+}
+
+void* CrGen_StringToken(Parser* p)
+{
+	return CrGen_ExpectToken(p, TOK_STRING);
+}
+
+static CrObject* parse_number_raw(const char* s)
+{
+	const char* end;
+	long x;
+	double dx;
+
+	assert(s != NULL);
+	errno = 0;
+	end = s + strlen(s) - 1;
+	if (s[0] == '0')
+	{
+
+		x = (long)strtoul(s, (char**)&end, 0);
+		if (x < 0 && errno == 0)
+		{
+			return CrIntObject_FromString(s, 0);
+		}
+	}
+	else
+	{
+		x = strtol(s, (char**)&end, 0);
+	}
+	if (*end == '\0')
+	{
+		if (errno != 0)
+		{
+			return CrIntObject_FromString(s, 0);
+		}
+		return CrIntObject_FromInt(x);
+	}
+	dx = strtod(s, NULL);
+	if (dx == -1.0 && CrError_Occurred())
+	{
+		return NULL;
+	}
+	return CrFloatObject_FromDouble(dx);
+}
+
+static CrObject* parse_number(const char* s)
+{
+	char* dup;
+	char* end;
+	CrObject* result = NULL;
+
+	assert(s != NULL);
+
+	if (strchr(s, '_') == NULL)
+	{
+		return parse_number_raw(s);
+	}
+	/* Create a duplicate without underscores. */
+	dup = (char*)Mem_Alloc(strlen(s) + 1);
+	if (dup == NULL)
+	{
+		CrError_NoMemory();
+		return NULL;
+	}
+	end = dup;
+	for (; *s; s++)
+	{
+		if (*s != '_')
+		{
+			*end++ = *s;
+		}
+	}
+	*end = '\0';
+	result = parse_number_raw(dup);
+	Mem_Free(dup);
+	return result;
+}
+
+expr_type CrGen_NumberToken(Parser* p)
+{
+	Token* t = CrGen_ExpectToken(p, TOK_NUMBER);
+	if (t == NULL)
+		return NULL;
+
+	char* raw_num = CrString_ToString(t->value);
+	if (raw_num == NULL)
+	{
+		p->error_indicator = 1;
+		return NULL;
+	}
+
+	CrObject* num = parse_number(raw_num);
+	if (num == NULL)
+	{
+		p->error_indicator = 1;
+		return NULL;
+	}
+
+	if (CrArena_AddCrObject(p->arena, num) < 0)
+	{
+		CrObject_DECREF(num);
+		p->error_indicator = 1;
+		return NULL;
+	}
+
+	return CrAST_Constant(num, NULL, t->lineno, t->col_offset, t->end_lineno, t->end_col_offset, p->arena);
 }
 
 ast_seq* CrGen_SingletonSeq(Parser* p, void* a)

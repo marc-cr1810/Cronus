@@ -18,5 +18,13 @@ CrStatus CrCore_InitTypes()
 	if (CrStatus_Exception(status))
 		return status;
 
+	status = CrList_InitTypes();
+	if (CrStatus_Exception(status))
+		return status;
+
+	status = CrBool_InitTypes();
+	if (CrStatus_Exception(status))
+		return status;
+
 	return CrStatus_Ok();
 }

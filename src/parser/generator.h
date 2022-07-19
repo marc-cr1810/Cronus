@@ -27,6 +27,9 @@ int CrGen_LookaheadWithInt(int positive, Token* (func)(Parser*, int), Parser* p,
 int CrGen_Lookahead(int positive, void* (func)(Parser*), Parser* p);
 Token* CrGen_GetLastNonWhitespaceToken(Parser* p);
 
+void* CrGen_StringToken(Parser* p);
+expr_type CrGen_NumberToken(Parser* p);
+
 /* AST Functions */
 
 ast_seq* CrGen_SingletonSeq(Parser* p, void* a);

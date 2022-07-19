@@ -96,6 +96,9 @@
     <ClInclude Include="src\core\arena.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\objects\boolobject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -165,6 +168,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\core\arena.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\objects\boolobject.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

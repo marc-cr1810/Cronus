@@ -10,3 +10,4 @@
 #include "objects/stringobject.h"
 #include "objects/floatobject.h"
 #include "objects/listobject.h"
+#include "objects/boolobject.h"

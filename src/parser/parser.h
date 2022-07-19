@@ -62,5 +62,4 @@ typedef struct _parser
 Parser* CrParser_New(TokState* tok, int startRule, int* error_code);
 
 void* CrParser_Parse(Parser* p);
-
 void CrParser_Free(Parser* p);

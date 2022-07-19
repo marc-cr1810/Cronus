@@ -2,16 +2,24 @@
 
 #include <core/errorcode.h>
 #include <core/error.h>
+#include <objects/stringobject.h>
+#include <parser/generator.h>
+
+#define MAXSTACK 6000
 
 #define CrParser_PrintTest(func, check) D(fprintf(stderr, "%*c> " func "[%d-%d]: %s?\n", p->level, ' ', mark, p->mark, check))
 #define CrParser_PrintSuccess(func, check) D(fprintf(stderr, "%*c+ " func "[%d-%d]: %s succeeded!\n", p->level, ' ', mark, p->mark, check))
 #define CrParser_PrintFail(func, check) D(fprintf(stderr, "%*c- " func "[%d-%d]: %s failed!\n", p->level, ' ', mark, p->mark, check))
 
 #define RULE_HEAD()			\
-D(p->level++);				\
-if (p->error_indicator)	\
+if (p->level++ == MAXSTACK) \
 {							\
-	D(p->level--);			\
+	p->error_indicator = 1;	\
+	CrError_NoMemory();		\
+}							\
+if (p->error_indicator)		\
+{							\
+	p->level--;				\
 	return NULL;			\
 }
 
@@ -93,8 +101,11 @@ static mod_type rule_file_mode(Parser* p);
 static mod_type rule_interactive_mode(Parser* p);
 static mod_type rule_eval_mode(Parser* p);
 static expr_type rule_string_mode(Parser* p);
+static ast_stmt_seq* rule_statement_newline(Parser* p);
 
+//
 // Definitions
+//
 
 // file: statements? $
 static mod_type rule_file_mode(Parser* p)
@@ -111,7 +122,30 @@ static mod_type rule_interactive_mode(Parser* p)
 	mod_type result = NULL;
 	int mark = p->mark;
 	{ // statement_newline
+		if (p->error_indicator)
+		{
+			D(p->level--);
+			return NULL;
+		}
+		CrParser_PrintTest("interactive_mode", "statement_newline");
+		ast_stmt_seq* stmt_sq;
 
+		if (
+			(stmt_sq = rule_statement_newline(p)) // statement_newline
+			)
+		{
+			CrParser_PrintSuccess("interactive_mode", "statement_newline");
+			result = CrAST_Interactive(stmt_sq);
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				D(p->level--);
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("interactive_mode", "statement_newline");
 	}
 	result = NULL;
 done:
@@ -132,6 +166,91 @@ static expr_type rule_string_mode(Parser* p)
 	CrError_SetString(CrExc_SystemError, "parser rule not implemented");
 	return NULL;
 }
+
+// statement_newline: compound_stmt NEWLINE | simple_stmts | NEWLINE | $
+static ast_stmt_seq* rule_statement_newline(Parser* p)
+{
+	RULE_HEAD();
+
+	ast_stmt_seq* result = NULL;
+	int mark = p->mark;
+	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
+	{
+		p->error_indicator = 1;
+		D(p->level--);
+		return NULL;
+	}
+
+	int start_lineno = p->tokens[mark]->lineno;
+	int start_col_offset = p->tokens[mark]->col_offset;
+
+	{ // NEWLINE
+		if (p->error_indicator)
+		{
+			D(p->level--);
+			return NULL;
+		}
+		CrParser_PrintTest("statement_newline", "NEWLINE");
+		Token* newline_var;
+		if (
+			(newline_var = CrGen_ExpectToken(p, TOK_NEWLINE)) // token = 'NEWLINE'
+			)
+		{
+			CrParser_PrintSuccess("statement_newline", "NEWLINE");
+			Token* token = CrGen_GetLastNonWhitespaceToken(p);
+			if (token == NULL)
+			{
+				D(p->level--);
+				return NULL;
+			}
+			int end_lineno = token->end_lineno;
+			int end_col_offset = token->end_col_offset;
+			result = (ast_stmt_seq*)CrGen_SingletonSeq(p, CHECK(stmt_type, CrAST_Pass(EXTRA)));
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				D(p->level--);
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("statement_newline", "NEWLINE");
+	}
+	{ // $
+		if (p->error_indicator)
+		{
+			D(p->level--);
+			return NULL;
+		}
+		CrParser_PrintTest("statement_newline", "$");
+		Token* endmarker_var;
+		if (
+			(endmarker_var = CrGen_ExpectToken(p, TOK_ENDMARKER)) // token = 'ENDMARKER'
+			)
+		{
+			CrParser_PrintSuccess("statement_newline", "$");
+			result = CrGen_InteractiveExit(p);
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				D(p->level--);
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("statement_newline", "$");
+	}
+	result = NULL;
+done:
+	D(p->level--);
+	return result;
+}
+
+//
+// End of Definitions
+//
 
 static int newline_in_string(Parser* p, const char* cur)
 {

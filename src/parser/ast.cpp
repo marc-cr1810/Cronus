@@ -1507,18 +1507,18 @@ pattern_type CrAST_MatchStar(identifier name, int lineno, int col_offset, int en
 
 pattern_type CrAST_MatchAs(pattern_type pattern, identifier name, int lineno, int col_offset, int end_lineno, int end_col_offset)
 {
-	pattern_type pattern;
-	pattern = (pattern_type)Mem_Alloc(sizeof(*pattern));
-	if (!pattern)
+	pattern_type p;
+	p = (pattern_type)Mem_Alloc(sizeof(*p));
+	if (!p)
 		return NULL;
-	pattern->kind = MatchAs_kind;
-	pattern->v.MatchAs.pattern = pattern;
-	pattern->v.MatchAs.name = name;
-	pattern->lineno = lineno;
-	pattern->col_offset = col_offset;
-	pattern->end_lineno = end_lineno;
-	pattern->end_col_offset = end_col_offset;
-	return pattern;
+	p->kind = MatchAs_kind;
+	p->v.MatchAs.pattern = pattern;
+	p->v.MatchAs.name = name;
+	p->lineno = lineno;
+	p->col_offset = col_offset;
+	p->end_lineno = end_lineno;
+	p->end_col_offset = end_col_offset;
+	return p;
 }
 
 pattern_type CrAST_MatchOr(ast_pattern_seq* patterns, int lineno, int col_offset, int end_lineno, int end_col_offset)

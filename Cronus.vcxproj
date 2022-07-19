@@ -157,6 +157,7 @@
     <ClInclude Include="src\objects\baseobject.h" />
     <ClInclude Include="src\objects\floatobject.h" />
     <ClInclude Include="src\objects\intobject.h" />
+    <ClInclude Include="src\objects\listobject.h" />
     <ClInclude Include="src\objects\object.h" />
     <ClInclude Include="src\objects\stringobject.h" />
     <ClInclude Include="src\parser\ast.h" />
@@ -182,6 +183,7 @@
     <ClCompile Include="src\objects\baseobject.cpp" />
     <ClCompile Include="src\objects\floatobject.cpp" />
     <ClCompile Include="src\objects\intobject.cpp" />
+    <ClCompile Include="src\objects\listobject.cpp" />
     <ClCompile Include="src\objects\object.cpp" />
     <ClCompile Include="src\objects\stringobject.cpp" />
     <ClCompile Include="src\parser\ast.cpp" />

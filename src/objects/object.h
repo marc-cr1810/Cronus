@@ -148,6 +148,19 @@ static CrObject* Object_NewRef(CrObject* obj);
 static CrObject* Object_XNewRef(CrObject* obj);
 #define CrObject_XNEWREF(obj) Object_XNewRef(CrObject_CAST(obj));
 
+#define CrObject_SETREF(obj, obj2)              \
+    do {                                        \
+        CrObject *vi_tmp = CrObject_CAST(obj);  \
+        (obj) = (obj2);                         \
+        CrObject_DECREF(vi_tmp);                  \
+    } while (0)
+#define CrObject_XSETREF(obj, obj2)             \
+    do {                                        \
+        CrObject *vi_tmp = CrObject_CAST(obj);  \
+        (obj) = (obj2);                         \
+        CrObject_XDECREF(vi_tmp);                 \
+    } while (0)
+
 /* Set the object type */
 static inline void ObjectSetType(CrObject* obj, CrTypeObject* type)
 {

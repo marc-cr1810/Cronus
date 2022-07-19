@@ -32,7 +32,7 @@ enum class decoding_state
     STATE_NORMAL        /* have a codec associated with input */
 };
 
-typedef struct _tokstate
+typedef struct tokstate
 {
     /* Input state; buf <= cur <= inp <= end */
     /* NB an entire line is held in the buffer */

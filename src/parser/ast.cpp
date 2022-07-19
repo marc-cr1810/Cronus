@@ -1254,3 +1254,302 @@ expr_type CrAST_Slice(expr_type lower, expr_type upper, expr_type step, int line
 	expr->end_col_offset = end_col_offset;
 	return expr;
 }
+
+comprehension_type CrAST_Comprehension(expr_type target, expr_type iter, ast_expr_seq* ifs, int is_async)
+{
+	comprehension_type comp;
+	if (!target) {
+		CrError_SetString(CrExc_ValueError, "field 'target' is required for CrAST_Comprehension");
+		return NULL;
+	}
+	if (!iter) {
+		CrError_SetString(CrExc_ValueError, "field 'iter' is required for CrAST_Comprehension");
+		return NULL;
+	}
+	comp = (comprehension_type)Mem_Alloc(sizeof(*comp));
+	if (!comp)
+		return NULL;
+	comp->target = target;
+	comp->iter = iter;
+	comp->ifs = ifs;
+	comp->is_async = is_async;
+	return comp;
+}
+
+excepthandler_type CrAST_ExceptHandler(expr_type type, identifier name, ast_stmt_seq* body, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	excepthandler_type exc;
+	exc = (excepthandler_type)Mem_Alloc(sizeof(*exc));
+	if (!exc)
+		return NULL;
+	exc->kind = ExceptHandler_kind;
+	exc->v.ExceptHandler.type = type;
+	exc->v.ExceptHandler.name = name;
+	exc->v.ExceptHandler.body = body;
+	exc->lineno = lineno;
+	exc->col_offset = col_offset;
+	exc->end_lineno = end_lineno;
+	exc->end_col_offset = end_col_offset;
+	return exc;
+}
+
+arguments_type CrAST_Arguments(ast_arg_seq* posonlyargs, ast_arg_seq* args, arg_type vararg, ast_arg_seq* kwonlyargs, ast_expr_seq* kw_defaults, arg_type kwarg, ast_expr_seq* defaults)
+{
+	arguments_type arguments;
+	arguments = (arguments_type)Mem_Alloc(sizeof(*arguments));
+	if (!arguments)
+		return NULL;
+	arguments->posonlyargs = posonlyargs;
+	arguments->args = args;
+	arguments->vararg = vararg;
+	arguments->kwonlyargs = kwonlyargs;
+	arguments->kw_defaults = kw_defaults;
+	arguments->kwarg = kwarg;
+	arguments->defaults = defaults;
+	return arguments;
+}
+
+arg_type CrAST_Arg(identifier arg, expr_type annotation, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	arg_type a;
+	if (!arg) {
+		CrError_SetString(CrExc_ValueError, "field 'arg' is required for CrAST_Arg");
+		return NULL;
+	}
+	a = (arg_type)Mem_Alloc(sizeof(*a));
+	if (!a)
+		return NULL;
+	a->arg = arg;
+	a->annotation = annotation;
+	a->type_comment = type_comment;
+	a->lineno = lineno;
+	a->col_offset = col_offset;
+	a->end_lineno = end_lineno;
+	a->end_col_offset = end_col_offset;
+	return a;
+}
+
+keyword_type CrAST_Keyword(identifier arg, expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	keyword_type kwd;
+	if (!value) {
+		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_Keyword");
+		return NULL;
+	}
+	kwd = (keyword_type)Mem_Alloc(sizeof(*kwd));
+	if (!kwd)
+		return NULL;
+	kwd->arg = arg;
+	kwd->value = value;
+	kwd->lineno = lineno;
+	kwd->col_offset = col_offset;
+	kwd->end_lineno = end_lineno;
+	kwd->end_col_offset = end_col_offset;
+	return kwd;
+}
+
+alias_type CrAST_Alias(identifier name, identifier asname, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	alias_type alias;
+	if (!name) {
+		CrError_SetString(CrExc_ValueError, "field 'name' is required for CrAST_Alias");
+		return NULL;
+	}
+	alias = (alias_type)Mem_Alloc(sizeof(*alias));
+	if (!alias)
+		return NULL;
+	alias->name = name;
+	alias->asname = asname;
+	alias->lineno = lineno;
+	alias->col_offset = col_offset;
+	alias->end_lineno = end_lineno;
+	alias->end_col_offset = end_col_offset;
+	return alias;
+}
+
+withitem_type CrAST_WithItem(expr_type context_expr, expr_type optional_vars)
+{
+	withitem_type withitem;
+	if (!context_expr) {
+		CrError_SetString(CrExc_ValueError, "field 'context_expr' is required for CrAST_WithItem");
+		return NULL;
+	}
+	withitem = (withitem_type)Mem_Alloc(sizeof(*withitem));
+	if (!withitem)
+		return NULL;
+	withitem->context_expr = context_expr;
+	withitem->optional_vars = optional_vars;
+	return withitem;
+}
+
+match_case_type CrAST_MatchCase(pattern_type pattern, expr_type guard, ast_stmt_seq* body)
+{
+	match_case_type matchcase;
+	if (!pattern) {
+		CrError_SetString(CrExc_ValueError, "field 'pattern' is required for CrAST_MatchCase");
+		return NULL;
+	}
+	matchcase = (match_case_type)Mem_Alloc(sizeof(*matchcase));
+	if (!matchcase)
+		return NULL;
+	matchcase->pattern = pattern;
+	matchcase->guard = guard;
+	matchcase->body = body;
+	return matchcase;
+}
+
+pattern_type CrAST_MatchValue(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	pattern_type pattern;
+	if (!value) {
+		CrError_SetString(CrExc_ValueError,	"field 'value' is required for CrAST_MatchValue");
+		return NULL;
+	}
+	pattern = (pattern_type)Mem_Alloc(sizeof(*pattern));
+	if (!pattern)
+		return NULL;
+	pattern->kind = MatchValue_kind;
+	pattern->v.MatchValue.value = value;
+	pattern->lineno = lineno;
+	pattern->col_offset = col_offset;
+	pattern->end_lineno = end_lineno;
+	pattern->end_col_offset = end_col_offset;
+	return pattern;
+}
+
+pattern_type CrAST_MatchSingleton(constant value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	pattern_type pattern;
+	if (!value) {
+		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_MatchSingleton");
+		return NULL;
+	}
+	pattern = (pattern_type)Mem_Alloc(sizeof(*pattern));
+	if (!pattern)
+		return NULL;
+	pattern->kind = MatchSingleton_kind;
+	pattern->v.MatchSingleton.value = value;
+	pattern->lineno = lineno;
+	pattern->col_offset = col_offset;
+	pattern->end_lineno = end_lineno;
+	pattern->end_col_offset = end_col_offset;
+	return pattern;
+}
+
+pattern_type CrAST_MatchSequence(ast_pattern_seq* patterns, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	pattern_type pattern;
+	pattern = (pattern_type)Mem_Alloc(sizeof(*pattern));
+	if (!pattern)
+		return NULL;
+	pattern->kind = MatchSequence_kind;
+	pattern->v.MatchSequence.patterns = patterns;
+	pattern->lineno = lineno;
+	pattern->col_offset = col_offset;
+	pattern->end_lineno = end_lineno;
+	pattern->end_col_offset = end_col_offset;
+	return pattern;
+}
+
+pattern_type CrAST_MatchMapping(ast_expr_seq* keys, ast_pattern_seq* patterns, identifier rest, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	pattern_type pattern;
+	pattern = (pattern_type)Mem_Alloc(sizeof(*pattern));
+	if (!pattern)
+		return NULL;
+	pattern->kind = MatchMapping_kind;
+	pattern->v.MatchMapping.keys = keys;
+	pattern->v.MatchMapping.patterns = patterns;
+	pattern->v.MatchMapping.rest = rest;
+	pattern->lineno = lineno;
+	pattern->col_offset = col_offset;
+	pattern->end_lineno = end_lineno;
+	pattern->end_col_offset = end_col_offset;
+	return pattern;
+}
+
+pattern_type CrAST_MatchClass(expr_type cls, ast_pattern_seq* patterns, ast_identifier_seq* kwd_attrs, ast_pattern_seq* kwd_patterns, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	pattern_type pattern;
+	if (!cls) {
+		CrError_SetString(CrExc_ValueError, "field 'cls' is required for CrAST_MatchClass");
+		return NULL;
+	}
+	pattern = (pattern_type)Mem_Alloc(sizeof(*pattern));
+	if (!pattern)
+		return NULL;
+	pattern->kind = MatchClass_kind;
+	pattern->v.MatchClass.cls = cls;
+	pattern->v.MatchClass.patterns = patterns;
+	pattern->v.MatchClass.kwd_attrs = kwd_attrs;
+	pattern->v.MatchClass.kwd_patterns = kwd_patterns;
+	pattern->lineno = lineno;
+	pattern->col_offset = col_offset;
+	pattern->end_lineno = end_lineno;
+	pattern->end_col_offset = end_col_offset;
+	return pattern;
+}
+
+pattern_type CrAST_MatchStar(identifier name, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	pattern_type p;
+	p = (pattern_type)Mem_Alloc(sizeof(*p));
+	if (!p)
+		return NULL;
+	p->kind = MatchStar_kind;
+	p->v.MatchStar.name = name;
+	p->lineno = lineno;
+	p->col_offset = col_offset;
+	p->end_lineno = end_lineno;
+	p->end_col_offset = end_col_offset;
+	return p;
+}
+
+pattern_type CrAST_MatchAs(pattern_type pattern, identifier name, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	pattern_type pattern;
+	pattern = (pattern_type)Mem_Alloc(sizeof(*pattern));
+	if (!pattern)
+		return NULL;
+	pattern->kind = MatchAs_kind;
+	pattern->v.MatchAs.pattern = pattern;
+	pattern->v.MatchAs.name = name;
+	pattern->lineno = lineno;
+	pattern->col_offset = col_offset;
+	pattern->end_lineno = end_lineno;
+	pattern->end_col_offset = end_col_offset;
+	return pattern;
+}
+
+pattern_type CrAST_MatchOr(ast_pattern_seq* patterns, int lineno, int col_offset, int end_lineno, int end_col_offset)
+{
+	pattern_type pattern;
+	pattern = (pattern_type)Mem_Alloc(sizeof(*pattern));
+	if (!pattern)
+		return NULL;
+	pattern->kind = MatchOr_kind;
+	pattern->v.MatchOr.patterns = patterns;
+	pattern->lineno = lineno;
+	pattern->col_offset = col_offset;
+	pattern->end_lineno = end_lineno;
+	pattern->end_col_offset = end_col_offset;
+	return pattern;
+}
+
+type_ignore_type CrAST_TypeIgnore(int lineno, string tag)
+{
+	type_ignore_type type_ignore;
+	if (!tag) {
+		CrError_SetString(CrExc_ValueError, "field 'tag' is required for CrAST_TypeIgnore");
+		return NULL;
+	}
+	type_ignore = (type_ignore_type)Mem_Alloc(sizeof(*type_ignore));
+	if (!type_ignore)
+		return NULL;
+	type_ignore->kind = TypeIgnore_kind;
+	type_ignore->v.TypeIgnore.lineno = lineno;
+	type_ignore->v.TypeIgnore.tag = tag;
+	return type_ignore;
+}
+
+

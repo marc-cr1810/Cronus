@@ -569,9 +569,9 @@ struct _comprehension {
 	int is_async;
 };
 
-enum _excepthandler_kind { ExceptHandler_kind = 1 };
+enum excepthandler_kind { ExceptHandler_kind = 1 };
 struct _excepthandler {
-	enum _excepthandler_kind kind;
+	enum excepthandler_kind kind;
 	union {
 		struct {
 			expr_type type;
@@ -634,14 +634,14 @@ struct _match_case {
 	ast_stmt_seq* body;
 };
 
-enum _pattern_kind {
+enum pattern_kind {
 	MatchValue_kind = 1, MatchSingleton_kind = 2,
 	MatchSequence_kind = 3, MatchMapping_kind = 4,
 	MatchClass_kind = 5, MatchStar_kind = 6, MatchAs_kind = 7,
 	MatchOr_kind = 8
 };
 struct _pattern {
-	enum _pattern_kind kind;
+	enum pattern_kind kind;
 	union {
 		struct {
 			expr_type value;
@@ -688,10 +688,10 @@ struct _pattern {
 	int end_col_offset;
 };
 
-enum _type_ignore_kind { TypeIgnore_kind = 1 };
+enum type_ignore_kind { TypeIgnore_kind = 1 };
 struct _type_ignore
 {
-	enum _type_ignore_kind kind;
+	enum type_ignore_kind kind;
 	union
 	{
 		struct
@@ -785,3 +785,27 @@ expr_type CrAST_Name(identifier id, expr_context_type ctx, int lineno, int col_o
 expr_type CrAST_List(ast_expr_seq* elts, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset);
 expr_type CrAST_Tuple(ast_expr_seq* elts, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset);
 expr_type CrAST_Slice(expr_type lower, expr_type upper, expr_type step, int lineno, int col_offset, int end_lineno, int end_col_offset);
+
+comprehension_type CrAST_Comprehension(expr_type target, expr_type iter, ast_expr_seq* ifs, int is_async);
+excepthandler_type CrAST_ExceptHandler(expr_type type, identifier name, ast_stmt_seq* body,
+	int	lineno, int col_offset, int end_lineno, int end_col_offset);
+arguments_type CrAST_Arguments(ast_arg_seq* posonlyargs, ast_arg_seq* args, arg_type vararg,
+	ast_arg_seq* kwonlyargs, ast_expr_seq* kw_defaults, arg_type kwarg, ast_expr_seq* defaults);
+arg_type CrAST_Arg(identifier arg, expr_type annotation, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset);
+keyword_type CrAST_Keyword(identifier arg, expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
+alias_type CrAST_Alias(identifier name, identifier asname, int lineno, int col_offset, int end_lineno, int end_col_offset);
+withitem_type CrAST_WithItem(expr_type context_expr, expr_type optional_vars);
+match_case_type CrAST_MatchCase(pattern_type pattern, expr_type guard, ast_stmt_seq* body);
+
+pattern_type CrAST_MatchValue(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
+pattern_type CrAST_MatchSingleton(constant value, int lineno, int col_offset, int end_lineno, int end_col_offset);
+pattern_type CrAST_MatchSequence(ast_pattern_seq* patterns, int lineno, int col_offset, int end_lineno, int end_col_offset);
+pattern_type CrAST_MatchMapping(ast_expr_seq* keys, ast_pattern_seq* patterns, identifier rest,
+	int lineno, int col_offset, int	end_lineno, int end_col_offset);
+pattern_type CrAST_MatchClass(expr_type cls, ast_pattern_seq* patterns, ast_identifier_seq* kwd_attrs, ast_pattern_seq* kwd_patterns,
+	int lineno, int	col_offset, int end_lineno, int end_col_offset);
+pattern_type CrAST_MatchStar(identifier name, int lineno, int col_offset, int end_lineno, int end_col_offset);
+pattern_type CrAST_MatchAs(pattern_type pattern, identifier name, int lineno, int col_offset, int end_lineno, int end_col_offset);
+pattern_type CrAST_MatchOr(ast_pattern_seq* patterns, int lineno, int col_offset, int end_lineno, int end_col_offset);
+
+type_ignore_type CrAST_TypeIgnore(int lineno, string tag);

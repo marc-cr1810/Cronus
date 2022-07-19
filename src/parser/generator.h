@@ -33,4 +33,4 @@ ast_seq* CrGen_SingletonSeq(Parser* p, void* a);
 
 ast_stmt_seq* CrGen_InteractiveExit(Parser* p);
 
-mod_type CrGen_ASTFromFileObject(std::ifstream* fp, CrObject* filename, int mode, const char* ps1, const char* ps2, int* error_code);
+mod_type CrGen_ASTFromFileObject(std::ifstream* fp, CrObject* filename, int mode, const char* ps1, const char* ps2, int* error_code, CrArena* arena);

@@ -93,6 +93,9 @@
     <ClInclude Include="src\objects\listobject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\core\arena.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -159,6 +162,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\objects\listobject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\arena.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

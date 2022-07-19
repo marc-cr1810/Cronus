@@ -3,7 +3,7 @@
 #include <core/mem.h>
 #include <core/error.h>
 
-ast_generic_seq* CrAST_NewGenericSeq(Cr_size_t size)
+ast_generic_seq* CrAST_NewGenericSeq(Cr_size_t size, CrArena* arena)
 {
 	ast_generic_seq* seq = NULL;
 	size_t n = 0;
@@ -16,7 +16,7 @@ ast_generic_seq* CrAST_NewGenericSeq(Cr_size_t size)
 		return NULL;
 	}
 	n += sizeof(ast_generic_seq);
-	seq = (ast_generic_seq*)Mem_Alloc(n);
+	seq = (ast_generic_seq*)CrArena_Alloc(arena, n);
 	if (!seq)
 	{
 		CrError_NoMemory();
@@ -28,7 +28,7 @@ ast_generic_seq* CrAST_NewGenericSeq(Cr_size_t size)
 	return seq;
 }
 
-ast_identifier_seq* CrAST_NewIdentifierSeq(Cr_size_t size)
+ast_identifier_seq* CrAST_NewIdentifierSeq(Cr_size_t size, CrArena* arena)
 {
 	ast_identifier_seq* seq = NULL;
 	size_t n = 0;
@@ -41,7 +41,7 @@ ast_identifier_seq* CrAST_NewIdentifierSeq(Cr_size_t size)
 		return NULL;
 	}
 	n += sizeof(ast_identifier_seq);
-	seq = (ast_identifier_seq*)Mem_Alloc(n);
+	seq = (ast_identifier_seq*)CrArena_Alloc(arena, n);
 	if (!seq)
 	{
 		CrError_NoMemory();
@@ -53,7 +53,7 @@ ast_identifier_seq* CrAST_NewIdentifierSeq(Cr_size_t size)
 	return seq;
 }
 
-ast_int_seq* CrAST_NewIntSeq(Cr_size_t size)
+ast_int_seq* CrAST_NewIntSeq(Cr_size_t size, CrArena* arena)
 {
 	ast_int_seq* seq = NULL;
 	size_t n = 0;
@@ -66,7 +66,7 @@ ast_int_seq* CrAST_NewIntSeq(Cr_size_t size)
 		return NULL;
 	}
 	n += sizeof(ast_int_seq);
-	seq = (ast_int_seq*)Mem_Alloc(n);
+	seq = (ast_int_seq*)CrArena_Alloc(arena, n);
 	if (!seq)
 	{
 		CrError_NoMemory();
@@ -84,10 +84,10 @@ ast_int_seq* CrAST_NewIntSeq(Cr_size_t size)
 //
 //
 
-mod_type CrAST_Module(ast_stmt_seq* body, ast_type_ignore_seq* type_ignores)
+mod_type CrAST_Module(ast_stmt_seq* body, ast_type_ignore_seq* type_ignores, CrArena* arena)
 {
 	mod_type mod;
-	mod = (mod_type)Mem_Alloc(sizeof(*mod));
+	mod = (mod_type)CrArena_Alloc(arena, sizeof(*mod));
 	if (!mod)
 		return NULL;
 	mod->kind = module_kind::Module_Kind;
@@ -96,10 +96,10 @@ mod_type CrAST_Module(ast_stmt_seq* body, ast_type_ignore_seq* type_ignores)
 	return mod;
 }
 
-mod_type CrAST_Interactive(ast_stmt_seq* body)
+mod_type CrAST_Interactive(ast_stmt_seq* body, CrArena* arena)
 {
 	mod_type mod;
-	mod = (mod_type)Mem_Alloc(sizeof(*mod));
+	mod = (mod_type)CrArena_Alloc(arena, sizeof(*mod));
 	if (!mod)
 		return NULL;
 	mod->kind = module_kind::Interactive_Kind;
@@ -107,7 +107,7 @@ mod_type CrAST_Interactive(ast_stmt_seq* body)
 	return mod;
 }
 
-mod_type CrAST_FunctionType(ast_expr_seq* argtypes, expr_type returns)
+mod_type CrAST_FunctionType(ast_expr_seq* argtypes, expr_type returns, CrArena* arena)
 {
 	mod_type mod;
 	if (!returns)
@@ -115,7 +115,7 @@ mod_type CrAST_FunctionType(ast_expr_seq* argtypes, expr_type returns)
 		CrError_SetString(CrExc_ValueError, "field 'returns' is required for CrAST_FunctionType");
 		return NULL;
 	}
-	mod = (mod_type)Mem_Alloc(sizeof(*mod));
+	mod = (mod_type)CrArena_Alloc(arena, sizeof(*mod));
 	if (!mod)
 		return NULL;
 	mod->kind = module_kind::FunctionType_Kind;
@@ -126,7 +126,7 @@ mod_type CrAST_FunctionType(ast_expr_seq* argtypes, expr_type returns)
 
 stmt_type CrAST_FunctionDef(identifier name, arguments_type args, ast_stmt_seq* body, 
 	ast_expr_seq* decorator_list, expr_type returns, string type_comment, 
-	int lineno, int col_offset, int end_lineno, int end_col_offset)
+	int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
 	if (!name)
@@ -140,7 +140,7 @@ stmt_type CrAST_FunctionDef(identifier name, arguments_type args, ast_stmt_seq* 
 		return NULL;
 	}
 
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::FunctionDef_kind;
@@ -157,7 +157,7 @@ stmt_type CrAST_FunctionDef(identifier name, arguments_type args, ast_stmt_seq* 
 	return stmt;
 }
 
-stmt_type CrAST_AsyncFunctionDef(identifier name, arguments_type args, ast_stmt_seq* body, ast_expr_seq* decorator_list, expr_type returns, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_AsyncFunctionDef(identifier name, arguments_type args, ast_stmt_seq* body, ast_expr_seq* decorator_list, expr_type returns, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
 	if (!name)
@@ -171,7 +171,7 @@ stmt_type CrAST_AsyncFunctionDef(identifier name, arguments_type args, ast_stmt_
 		return NULL;
 	}
 
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::AsyncFunctionDef_kind;
@@ -189,7 +189,7 @@ stmt_type CrAST_AsyncFunctionDef(identifier name, arguments_type args, ast_stmt_
 }
 
 stmt_type CrAST_ClassDef(identifier name, ast_expr_seq* bases, ast_keyword_seq* keywords, ast_stmt_seq* body, ast_expr_seq* decorator_list, 
-	int lineno, int col_offset, int end_lineno, int end_col_offset)
+	int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
 	if (!name)
@@ -198,7 +198,7 @@ stmt_type CrAST_ClassDef(identifier name, ast_expr_seq* bases, ast_keyword_seq* 
 		return NULL;
 	}
 
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::ClassDef_kind;
@@ -214,10 +214,10 @@ stmt_type CrAST_ClassDef(identifier name, ast_expr_seq* bases, ast_keyword_seq* 
 	return stmt;
 }
 
-stmt_type CrAST_Return(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_Return(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
-	stmt = (stmt_type)Mem_Alloc(sizeof(stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::Return_kind;
@@ -229,10 +229,10 @@ stmt_type CrAST_Return(expr_type value, int lineno, int col_offset, int end_line
 	return stmt;
 }
 
-stmt_type CrAST_Delete(ast_expr_seq* targets, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_Delete(ast_expr_seq* targets, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
-	stmt = (stmt_type)Mem_Alloc(sizeof(stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::Delete_kind;
@@ -245,14 +245,14 @@ stmt_type CrAST_Delete(ast_expr_seq* targets, int lineno, int col_offset, int en
 }
 
 stmt_type CrAST_Assign(ast_expr_seq* targets, expr_type value, string type_comment, 
-	int lineno, int col_offset, int end_lineno, int end_col_offset)
+	int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
 	if (!value) {
 		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_Assign");
 		return NULL;
 	}
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::Assign_kind;
@@ -266,7 +266,7 @@ stmt_type CrAST_Assign(ast_expr_seq* targets, expr_type value, string type_comme
 	return stmt;
 }
 
-stmt_type CrAST_AugAssign(expr_type target, operator_type op, expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_AugAssign(expr_type target, operator_type op, expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
 	if (!target) {
@@ -281,7 +281,7 @@ stmt_type CrAST_AugAssign(expr_type target, operator_type op, expr_type value, i
 		CrError_SetString(CrExc_ValueError,	"field 'value' is required for CrAST_AugAssign");
 		return NULL;
 	}
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::AugAssign_kind;
@@ -295,7 +295,7 @@ stmt_type CrAST_AugAssign(expr_type target, operator_type op, expr_type value, i
 	return stmt;
 }
 
-stmt_type CrAST_AnnAssign(expr_type target, expr_type annotation, expr_type value, int simple, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_AnnAssign(expr_type target, expr_type annotation, expr_type value, int simple, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
 	if (!target) {
@@ -306,7 +306,7 @@ stmt_type CrAST_AnnAssign(expr_type target, expr_type annotation, expr_type valu
 		CrError_SetString(CrExc_ValueError, "field 'annotation' is required for CrAST_AnnAssign");
 		return NULL;
 	}
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::AnnAssign_kind;
@@ -321,7 +321,7 @@ stmt_type CrAST_AnnAssign(expr_type target, expr_type annotation, expr_type valu
 	return stmt;
 }
 
-stmt_type CrAST_For(expr_type target, expr_type iter, ast_stmt_seq* body, ast_stmt_seq* orelse, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_For(expr_type target, expr_type iter, ast_stmt_seq* body, ast_stmt_seq* orelse, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
 	if (!target) {
@@ -332,7 +332,7 @@ stmt_type CrAST_For(expr_type target, expr_type iter, ast_stmt_seq* body, ast_st
 		CrError_SetString(CrExc_ValueError, "field 'iter' is required for CrAST_For");
 		return NULL;
 	}
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::For_kind;
@@ -348,7 +348,7 @@ stmt_type CrAST_For(expr_type target, expr_type iter, ast_stmt_seq* body, ast_st
 	return stmt;
 }
 
-stmt_type CrAST_AsyncFor(expr_type target, expr_type iter, ast_stmt_seq* body, ast_stmt_seq* orelse, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_AsyncFor(expr_type target, expr_type iter, ast_stmt_seq* body, ast_stmt_seq* orelse, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
 	if (!target) {
@@ -359,7 +359,7 @@ stmt_type CrAST_AsyncFor(expr_type target, expr_type iter, ast_stmt_seq* body, a
 		CrError_SetString(CrExc_ValueError, "field 'iter' is required for CrAST_AsyncFor");
 		return NULL;
 	}
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::AsyncFor_kind;
@@ -375,14 +375,14 @@ stmt_type CrAST_AsyncFor(expr_type target, expr_type iter, ast_stmt_seq* body, a
 	return stmt;
 }
 
-stmt_type CrAST_While(expr_type test, ast_stmt_seq* body, ast_stmt_seq* orelse, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_While(expr_type test, ast_stmt_seq* body, ast_stmt_seq* orelse, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
 	if (!test) {
 		CrError_SetString(CrExc_ValueError, "field 'test' is required for CrAST_While");
 		return NULL;
 	}
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::While_kind;
@@ -396,14 +396,14 @@ stmt_type CrAST_While(expr_type test, ast_stmt_seq* body, ast_stmt_seq* orelse, 
 	return stmt;
 }
 
-stmt_type CrAST_If(expr_type test, ast_stmt_seq* body, ast_stmt_seq* orelse, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_If(expr_type test, ast_stmt_seq* body, ast_stmt_seq* orelse, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
 	if (!test) {
 		CrError_SetString(CrExc_ValueError, "field 'test' is required for CrAST_If");
 		return NULL;
 	}
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::If_kind;
@@ -417,10 +417,10 @@ stmt_type CrAST_If(expr_type test, ast_stmt_seq* body, ast_stmt_seq* orelse, int
 	return stmt;
 }
 
-stmt_type CrAST_With(ast_withitem_seq* items, ast_stmt_seq* body, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_With(ast_withitem_seq* items, ast_stmt_seq* body, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::With_kind;
@@ -434,10 +434,10 @@ stmt_type CrAST_With(ast_withitem_seq* items, ast_stmt_seq* body, string type_co
 	return stmt;
 }
 
-stmt_type CrAST_AsyncWith(ast_withitem_seq* items, ast_stmt_seq* body, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_AsyncWith(ast_withitem_seq* items, ast_stmt_seq* body, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::AsyncWith_kind;
@@ -451,14 +451,14 @@ stmt_type CrAST_AsyncWith(ast_withitem_seq* items, ast_stmt_seq* body, string ty
 	return stmt;
 }
 
-stmt_type CrAST_Match(expr_type subject, ast_match_case_seq* cases, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_Match(expr_type subject, ast_match_case_seq* cases, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
 	if (!subject) {
 		CrError_SetString(CrExc_ValueError, "field 'subject' is required for CrAST_Match");
 		return NULL;
 	}
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::Match_kind;
@@ -471,10 +471,10 @@ stmt_type CrAST_Match(expr_type subject, ast_match_case_seq* cases, int lineno, 
 	return stmt;
 }
 
-stmt_type CrAST_Raise(expr_type exc, expr_type cause, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_Raise(expr_type exc, expr_type cause, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::Raise_kind;
@@ -487,10 +487,10 @@ stmt_type CrAST_Raise(expr_type exc, expr_type cause, int lineno, int col_offset
 	return stmt;
 }
 
-stmt_type CrAST_Try(ast_stmt_seq* body, ast_excepthandler_seq* handlers, ast_stmt_seq* orelse, ast_stmt_seq* finalbody, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_Try(ast_stmt_seq* body, ast_excepthandler_seq* handlers, ast_stmt_seq* orelse, ast_stmt_seq* finalbody, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::Try_kind;
@@ -505,10 +505,10 @@ stmt_type CrAST_Try(ast_stmt_seq* body, ast_excepthandler_seq* handlers, ast_stm
 	return stmt;
 }
 
-stmt_type CrAST_TryStar(ast_stmt_seq* body, ast_excepthandler_seq* handlers, ast_stmt_seq* orelse, ast_stmt_seq* finalbody, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_TryStar(ast_stmt_seq* body, ast_excepthandler_seq* handlers, ast_stmt_seq* orelse, ast_stmt_seq* finalbody, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::TryStar_kind;
@@ -523,14 +523,14 @@ stmt_type CrAST_TryStar(ast_stmt_seq* body, ast_excepthandler_seq* handlers, ast
 	return stmt;
 }
 
-stmt_type CrAST_Assert(expr_type test, expr_type msg, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_Assert(expr_type test, expr_type msg, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
 	if (!test) {
 		CrError_SetString(CrExc_ValueError, "field 'test' is required for CrAST_Assert");
 		return NULL;
 	}
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::Assert_kind;
@@ -543,10 +543,10 @@ stmt_type CrAST_Assert(expr_type test, expr_type msg, int lineno, int col_offset
 	return stmt;
 }
 
-stmt_type CrAST_Import(ast_alias_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_Import(ast_alias_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::Import_kind;
@@ -558,10 +558,10 @@ stmt_type CrAST_Import(ast_alias_seq* names, int lineno, int col_offset, int end
 	return stmt;
 }
 
-stmt_type CrAST_ImportFrom(identifier module, ast_alias_seq* names, int level, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_ImportFrom(identifier module, ast_alias_seq* names, int level, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::ImportFrom_kind;
@@ -575,10 +575,10 @@ stmt_type CrAST_ImportFrom(identifier module, ast_alias_seq* names, int level, i
 	return stmt;
 }
 
-stmt_type CrAST_Global(ast_identifier_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_Global(ast_identifier_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::Global_kind;
@@ -590,10 +590,10 @@ stmt_type CrAST_Global(ast_identifier_seq* names, int lineno, int col_offset, in
 	return stmt;
 }
 
-stmt_type CrAST_Nonlocal(ast_identifier_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_Nonlocal(ast_identifier_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
-	stmt = (stmt_type)Mem_Alloc(sizeof(*stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(*stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::Nonlocal_kind;
@@ -605,7 +605,7 @@ stmt_type CrAST_Nonlocal(ast_identifier_seq* names, int lineno, int col_offset, 
 	return stmt;
 }
 
-stmt_type CrAST_Expr(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_Expr(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	if (!value)
 	{
@@ -613,7 +613,7 @@ stmt_type CrAST_Expr(expr_type value, int lineno, int col_offset, int end_lineno
 		return NULL;
 	}
 	stmt_type stmt;
-	stmt = (stmt_type)Mem_Alloc(sizeof(stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::Expr_kind;
@@ -625,10 +625,10 @@ stmt_type CrAST_Expr(expr_type value, int lineno, int col_offset, int end_lineno
 	return stmt;
 }
 
-stmt_type CrAST_Pass(int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_Pass(int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
-	stmt = (stmt_type)Mem_Alloc(sizeof(stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::Pass_kind;
@@ -639,10 +639,10 @@ stmt_type CrAST_Pass(int lineno, int col_offset, int end_lineno, int end_col_off
 	return stmt;
 }
 
-stmt_type CrAST_Break(int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_Break(int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
-	stmt = (stmt_type)Mem_Alloc(sizeof(stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::Break_kind;
@@ -653,10 +653,10 @@ stmt_type CrAST_Break(int lineno, int col_offset, int end_lineno, int end_col_of
 	return stmt;
 }
 
-stmt_type CrAST_Continue(int lineno, int col_offset, int end_lineno, int end_col_offset)
+stmt_type CrAST_Continue(int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	stmt_type stmt;
-	stmt = (stmt_type)Mem_Alloc(sizeof(stmt));
+	stmt = (stmt_type)CrArena_Alloc(arena, sizeof(stmt));
 	if (!stmt)
 		return NULL;
 	stmt->kind = stmt_kind::Continue_kind;
@@ -667,14 +667,14 @@ stmt_type CrAST_Continue(int lineno, int col_offset, int end_lineno, int end_col
 	return stmt;
 }
 
-expr_type CrAST_BoolOp(boolop_type op, ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_BoolOp(boolop_type op, ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!op) {
 		CrError_SetString(CrExc_ValueError, "field 'op' is required for CrAST_BoolOp");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::BoolOp_kind;
@@ -687,7 +687,7 @@ expr_type CrAST_BoolOp(boolop_type op, ast_expr_seq* values, int lineno, int col
 	return expr;
 }
 
-expr_type CrAST_BinOp(expr_type left, operator_type op, expr_type right, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_BinOp(expr_type left, operator_type op, expr_type right, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	if (!left)
 	{
@@ -705,7 +705,7 @@ expr_type CrAST_BinOp(expr_type left, operator_type op, expr_type right, int lin
 		return NULL;
 	}
 	expr_type expr;
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::BinOp_kind;
@@ -719,7 +719,7 @@ expr_type CrAST_BinOp(expr_type left, operator_type op, expr_type right, int lin
 	return expr;
 }
 
-expr_type CrAST_UnaryOp(unaryop_type op, expr_type operand, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_UnaryOp(unaryop_type op, expr_type operand, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	if (!static_cast<int>(op))
 	{
@@ -732,7 +732,7 @@ expr_type CrAST_UnaryOp(unaryop_type op, expr_type operand, int lineno, int col_
 		return NULL;
 	}
 	expr_type expr;
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::UnaryOp_kind;
@@ -745,7 +745,7 @@ expr_type CrAST_UnaryOp(unaryop_type op, expr_type operand, int lineno, int col_
 	return expr;
 }
 
-expr_type CrAST_NamedExpr(expr_type target, expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_NamedExpr(expr_type target, expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!target) {
@@ -756,7 +756,7 @@ expr_type CrAST_NamedExpr(expr_type target, expr_type value, int lineno, int col
 		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_NamedExpr");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::NamedExpr_kind;
@@ -769,7 +769,7 @@ expr_type CrAST_NamedExpr(expr_type target, expr_type value, int lineno, int col
 	return expr;
 }
 
-expr_type CrAST_Lambda(arguments_type args, expr_type body, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_Lambda(arguments_type args, expr_type body, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!args) {
@@ -780,7 +780,7 @@ expr_type CrAST_Lambda(arguments_type args, expr_type body, int lineno, int col_
 		CrError_SetString(CrExc_ValueError, "field 'body' is required for CrAST_Lambda");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::Lambda_kind;
@@ -793,7 +793,7 @@ expr_type CrAST_Lambda(arguments_type args, expr_type body, int lineno, int col_
 	return expr;
 }
 
-expr_type CrAST_IfExp(expr_type test, expr_type body, expr_type orelse, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_IfExp(expr_type test, expr_type body, expr_type orelse, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!test) {
@@ -808,7 +808,7 @@ expr_type CrAST_IfExp(expr_type test, expr_type body, expr_type orelse, int line
 		CrError_SetString(CrExc_ValueError, "field 'orelse' is required for CrAST_IfExp");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::IfExp_kind;
@@ -822,10 +822,10 @@ expr_type CrAST_IfExp(expr_type test, expr_type body, expr_type orelse, int line
 	return expr;
 }
 
-expr_type CrAST_Dict(ast_expr_seq* keys, ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_Dict(ast_expr_seq* keys, ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::Dict_kind;
@@ -838,10 +838,10 @@ expr_type CrAST_Dict(ast_expr_seq* keys, ast_expr_seq* values, int lineno, int c
 	return expr;
 }
 
-expr_type CrAST_Set(ast_expr_seq* elts, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_Set(ast_expr_seq* elts, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::Set_kind;
@@ -853,14 +853,14 @@ expr_type CrAST_Set(ast_expr_seq* elts, int lineno, int col_offset, int end_line
 	return expr;
 }
 
-expr_type CrAST_ListComp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_ListComp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!elt) {
 		CrError_SetString(CrExc_ValueError, "field 'elt' is required for CrAST_ListComp");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::ListComp_kind;
@@ -873,14 +873,14 @@ expr_type CrAST_ListComp(expr_type elt, ast_comprehension_seq* generators, int l
 	return expr;
 }
 
-expr_type CrAST_SetComp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_SetComp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!elt) {
 		CrError_SetString(CrExc_ValueError, "field 'elt' is required for CrAST_SetComp");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::SetComp_kind;
@@ -893,7 +893,7 @@ expr_type CrAST_SetComp(expr_type elt, ast_comprehension_seq* generators, int li
 	return expr;
 }
 
-expr_type CrAST_DictComp(expr_type key, expr_type value, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_DictComp(expr_type key, expr_type value, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!key) {
@@ -906,7 +906,7 @@ expr_type CrAST_DictComp(expr_type key, expr_type value, ast_comprehension_seq* 
 			"field 'value' is required for CrAST_DictComp");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::DictComp_kind;
@@ -920,14 +920,14 @@ expr_type CrAST_DictComp(expr_type key, expr_type value, ast_comprehension_seq* 
 	return expr;
 }
 
-expr_type CrAST_GeneratorExp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_GeneratorExp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!elt) {
 		CrError_SetString(CrExc_ValueError, "field 'elt' is required for CrAST_GeneratorExp");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::GeneratorExp_kind;
@@ -940,14 +940,14 @@ expr_type CrAST_GeneratorExp(expr_type elt, ast_comprehension_seq* generators, i
 	return expr;
 }
 
-expr_type CrAST_Await(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_Await(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!value) {
 		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_Await");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::Await_kind;
@@ -959,10 +959,10 @@ expr_type CrAST_Await(expr_type value, int lineno, int col_offset, int end_linen
 	return expr;
 }
 
-expr_type CrAST_Yield(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_Yield(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::Yield_kind;
@@ -974,14 +974,14 @@ expr_type CrAST_Yield(expr_type value, int lineno, int col_offset, int end_linen
 	return expr;
 }
 
-expr_type CrAST_YieldFrom(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_YieldFrom(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!value) {
 		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_YieldFrom");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::YieldFrom_kind;
@@ -993,14 +993,14 @@ expr_type CrAST_YieldFrom(expr_type value, int lineno, int col_offset, int end_l
 	return expr;
 }
 
-expr_type CrAST_Compare(expr_type left, ast_int_seq* ops, ast_expr_seq* comparators, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_Compare(expr_type left, ast_int_seq* ops, ast_expr_seq* comparators, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!left) {
 		CrError_SetString(CrExc_ValueError, "field 'left' is required for CrAST_Compare");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::Compare_kind;
@@ -1014,14 +1014,14 @@ expr_type CrAST_Compare(expr_type left, ast_int_seq* ops, ast_expr_seq* comparat
 	return expr;
 }
 
-expr_type CrAST_Call(expr_type func, ast_expr_seq* args, ast_keyword_seq* keywords, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_Call(expr_type func, ast_expr_seq* args, ast_keyword_seq* keywords, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!func) {
 		CrError_SetString(CrExc_ValueError, "field 'func' is required for CrAST_Call");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::Call_kind;
@@ -1035,14 +1035,14 @@ expr_type CrAST_Call(expr_type func, ast_expr_seq* args, ast_keyword_seq* keywor
 	return expr;
 }
 
-expr_type CrAST_FormattedValue(expr_type value, int conversion, expr_type format_spec, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_FormattedValue(expr_type value, int conversion, expr_type format_spec, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!value) {
 		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_FormattedValue");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::FormattedValue_kind;
@@ -1056,10 +1056,10 @@ expr_type CrAST_FormattedValue(expr_type value, int conversion, expr_type format
 	return expr;
 }
 
-expr_type CrAST_JoinedStr(ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_JoinedStr(ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::JoinedStr_kind;
@@ -1071,7 +1071,7 @@ expr_type CrAST_JoinedStr(ast_expr_seq* values, int lineno, int col_offset, int 
 	return expr;
 }
 
-expr_type CrAST_Constant(constant value, string kind, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_Constant(constant value, string kind, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	if (!value)
 	{
@@ -1079,7 +1079,7 @@ expr_type CrAST_Constant(constant value, string kind, int lineno, int col_offset
 		return NULL;
 	}
 	expr_type expr;
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::Constant_kind;
@@ -1092,7 +1092,7 @@ expr_type CrAST_Constant(constant value, string kind, int lineno, int col_offset
 	return expr;
 }
 
-expr_type CrAST_Attribute(expr_type value, identifier attr, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_Attribute(expr_type value, identifier attr, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!value) {
@@ -1107,7 +1107,7 @@ expr_type CrAST_Attribute(expr_type value, identifier attr, expr_context_type ct
 		CrError_SetString(CrExc_ValueError, "field 'ctx' is required for CrAST_Attribute");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::Attribute_kind;
@@ -1121,7 +1121,7 @@ expr_type CrAST_Attribute(expr_type value, identifier attr, expr_context_type ct
 	return expr;
 }
 
-expr_type CrAST_Subscript(expr_type value, expr_type slice, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_Subscript(expr_type value, expr_type slice, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!value) {
@@ -1136,7 +1136,7 @@ expr_type CrAST_Subscript(expr_type value, expr_type slice, expr_context_type ct
 		CrError_SetString(CrExc_ValueError, "field 'ctx' is required for CrAST_Subscript");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::Subscript_kind;
@@ -1150,7 +1150,7 @@ expr_type CrAST_Subscript(expr_type value, expr_type slice, expr_context_type ct
 	return expr;
 }
 
-expr_type CrAST_Starred(expr_type value, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_Starred(expr_type value, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!value) {
@@ -1161,7 +1161,7 @@ expr_type CrAST_Starred(expr_type value, expr_context_type ctx, int lineno, int 
 		CrError_SetString(CrExc_ValueError, "field 'ctx' is required for CrAST_Starred");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::Starred_kind;
@@ -1174,7 +1174,7 @@ expr_type CrAST_Starred(expr_type value, expr_context_type ctx, int lineno, int 
 	return expr;
 }
 
-expr_type CrAST_Name(identifier id, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_Name(identifier id, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!id) {
@@ -1185,7 +1185,7 @@ expr_type CrAST_Name(identifier id, expr_context_type ctx, int lineno, int col_o
 		CrError_SetString(CrExc_ValueError, "field 'ctx' is required for CrAST_Name");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::Name_kind;
@@ -1198,14 +1198,14 @@ expr_type CrAST_Name(identifier id, expr_context_type ctx, int lineno, int col_o
 	return expr;
 }
 
-expr_type CrAST_List(ast_expr_seq* elts, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_List(ast_expr_seq* elts, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!ctx) {
 		CrError_SetString(CrExc_ValueError, "field 'ctx' is required for CrAST_List");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::List_kind;
@@ -1218,14 +1218,14 @@ expr_type CrAST_List(ast_expr_seq* elts, expr_context_type ctx, int lineno, int 
 	return expr;
 }
 
-expr_type CrAST_Tuple(ast_expr_seq* elts, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_Tuple(ast_expr_seq* elts, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
 	if (!ctx) {
 		CrError_SetString(CrExc_ValueError, "field 'ctx' is required for CrAST_Tuple");
 		return NULL;
 	}
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::Tuple_kind;
@@ -1238,10 +1238,10 @@ expr_type CrAST_Tuple(ast_expr_seq* elts, expr_context_type ctx, int lineno, int
 	return expr;
 }
 
-expr_type CrAST_Slice(expr_type lower, expr_type upper, expr_type step, int lineno, int col_offset, int end_lineno, int end_col_offset)
+expr_type CrAST_Slice(expr_type lower, expr_type upper, expr_type step, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	expr_type expr;
-	expr = (expr_type)Mem_Alloc(sizeof(*expr));
+	expr = (expr_type)CrArena_Alloc(arena, sizeof(*expr));
 	if (!expr)
 		return NULL;
 	expr->kind = expr_kind::Slice_kind;
@@ -1255,7 +1255,7 @@ expr_type CrAST_Slice(expr_type lower, expr_type upper, expr_type step, int line
 	return expr;
 }
 
-comprehension_type CrAST_Comprehension(expr_type target, expr_type iter, ast_expr_seq* ifs, int is_async)
+comprehension_type CrAST_Comprehension(expr_type target, expr_type iter, ast_expr_seq* ifs, int is_async, CrArena* arena)
 {
 	comprehension_type comp;
 	if (!target) {
@@ -1266,7 +1266,7 @@ comprehension_type CrAST_Comprehension(expr_type target, expr_type iter, ast_exp
 		CrError_SetString(CrExc_ValueError, "field 'iter' is required for CrAST_Comprehension");
 		return NULL;
 	}
-	comp = (comprehension_type)Mem_Alloc(sizeof(*comp));
+	comp = (comprehension_type)CrArena_Alloc(arena, sizeof(*comp));
 	if (!comp)
 		return NULL;
 	comp->target = target;
@@ -1276,10 +1276,10 @@ comprehension_type CrAST_Comprehension(expr_type target, expr_type iter, ast_exp
 	return comp;
 }
 
-excepthandler_type CrAST_ExceptHandler(expr_type type, identifier name, ast_stmt_seq* body, int lineno, int col_offset, int end_lineno, int end_col_offset)
+excepthandler_type CrAST_ExceptHandler(expr_type type, identifier name, ast_stmt_seq* body, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	excepthandler_type exc;
-	exc = (excepthandler_type)Mem_Alloc(sizeof(*exc));
+	exc = (excepthandler_type)CrArena_Alloc(arena, sizeof(*exc));
 	if (!exc)
 		return NULL;
 	exc->kind = ExceptHandler_kind;
@@ -1293,10 +1293,10 @@ excepthandler_type CrAST_ExceptHandler(expr_type type, identifier name, ast_stmt
 	return exc;
 }
 
-arguments_type CrAST_Arguments(ast_arg_seq* posonlyargs, ast_arg_seq* args, arg_type vararg, ast_arg_seq* kwonlyargs, ast_expr_seq* kw_defaults, arg_type kwarg, ast_expr_seq* defaults)
+arguments_type CrAST_Arguments(ast_arg_seq* posonlyargs, ast_arg_seq* args, arg_type vararg, ast_arg_seq* kwonlyargs, ast_expr_seq* kw_defaults, arg_type kwarg, ast_expr_seq* defaults, CrArena* arena)
 {
 	arguments_type arguments;
-	arguments = (arguments_type)Mem_Alloc(sizeof(*arguments));
+	arguments = (arguments_type)CrArena_Alloc(arena, sizeof(*arguments));
 	if (!arguments)
 		return NULL;
 	arguments->posonlyargs = posonlyargs;
@@ -1309,14 +1309,14 @@ arguments_type CrAST_Arguments(ast_arg_seq* posonlyargs, ast_arg_seq* args, arg_
 	return arguments;
 }
 
-arg_type CrAST_Arg(identifier arg, expr_type annotation, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset)
+arg_type CrAST_Arg(identifier arg, expr_type annotation, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	arg_type a;
 	if (!arg) {
 		CrError_SetString(CrExc_ValueError, "field 'arg' is required for CrAST_Arg");
 		return NULL;
 	}
-	a = (arg_type)Mem_Alloc(sizeof(*a));
+	a = (arg_type)CrArena_Alloc(arena, sizeof(*a));
 	if (!a)
 		return NULL;
 	a->arg = arg;
@@ -1329,14 +1329,14 @@ arg_type CrAST_Arg(identifier arg, expr_type annotation, string type_comment, in
 	return a;
 }
 
-keyword_type CrAST_Keyword(identifier arg, expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+keyword_type CrAST_Keyword(identifier arg, expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	keyword_type kwd;
 	if (!value) {
 		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_Keyword");
 		return NULL;
 	}
-	kwd = (keyword_type)Mem_Alloc(sizeof(*kwd));
+	kwd = (keyword_type)CrArena_Alloc(arena, sizeof(*kwd));
 	if (!kwd)
 		return NULL;
 	kwd->arg = arg;
@@ -1348,14 +1348,14 @@ keyword_type CrAST_Keyword(identifier arg, expr_type value, int lineno, int col_
 	return kwd;
 }
 
-alias_type CrAST_Alias(identifier name, identifier asname, int lineno, int col_offset, int end_lineno, int end_col_offset)
+alias_type CrAST_Alias(identifier name, identifier asname, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	alias_type alias;
 	if (!name) {
 		CrError_SetString(CrExc_ValueError, "field 'name' is required for CrAST_Alias");
 		return NULL;
 	}
-	alias = (alias_type)Mem_Alloc(sizeof(*alias));
+	alias = (alias_type)CrArena_Alloc(arena, sizeof(*alias));
 	if (!alias)
 		return NULL;
 	alias->name = name;
@@ -1367,14 +1367,14 @@ alias_type CrAST_Alias(identifier name, identifier asname, int lineno, int col_o
 	return alias;
 }
 
-withitem_type CrAST_WithItem(expr_type context_expr, expr_type optional_vars)
+withitem_type CrAST_WithItem(expr_type context_expr, expr_type optional_vars, CrArena* arena)
 {
 	withitem_type withitem;
 	if (!context_expr) {
 		CrError_SetString(CrExc_ValueError, "field 'context_expr' is required for CrAST_WithItem");
 		return NULL;
 	}
-	withitem = (withitem_type)Mem_Alloc(sizeof(*withitem));
+	withitem = (withitem_type)CrArena_Alloc(arena, sizeof(*withitem));
 	if (!withitem)
 		return NULL;
 	withitem->context_expr = context_expr;
@@ -1382,14 +1382,14 @@ withitem_type CrAST_WithItem(expr_type context_expr, expr_type optional_vars)
 	return withitem;
 }
 
-match_case_type CrAST_MatchCase(pattern_type pattern, expr_type guard, ast_stmt_seq* body)
+match_case_type CrAST_MatchCase(pattern_type pattern, expr_type guard, ast_stmt_seq* body, CrArena* arena)
 {
 	match_case_type matchcase;
 	if (!pattern) {
 		CrError_SetString(CrExc_ValueError, "field 'pattern' is required for CrAST_MatchCase");
 		return NULL;
 	}
-	matchcase = (match_case_type)Mem_Alloc(sizeof(*matchcase));
+	matchcase = (match_case_type)CrArena_Alloc(arena, sizeof(*matchcase));
 	if (!matchcase)
 		return NULL;
 	matchcase->pattern = pattern;
@@ -1398,14 +1398,14 @@ match_case_type CrAST_MatchCase(pattern_type pattern, expr_type guard, ast_stmt_
 	return matchcase;
 }
 
-pattern_type CrAST_MatchValue(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+pattern_type CrAST_MatchValue(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	pattern_type pattern;
 	if (!value) {
 		CrError_SetString(CrExc_ValueError,	"field 'value' is required for CrAST_MatchValue");
 		return NULL;
 	}
-	pattern = (pattern_type)Mem_Alloc(sizeof(*pattern));
+	pattern = (pattern_type)CrArena_Alloc(arena, sizeof(*pattern));
 	if (!pattern)
 		return NULL;
 	pattern->kind = MatchValue_kind;
@@ -1417,14 +1417,14 @@ pattern_type CrAST_MatchValue(expr_type value, int lineno, int col_offset, int e
 	return pattern;
 }
 
-pattern_type CrAST_MatchSingleton(constant value, int lineno, int col_offset, int end_lineno, int end_col_offset)
+pattern_type CrAST_MatchSingleton(constant value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	pattern_type pattern;
 	if (!value) {
 		CrError_SetString(CrExc_ValueError, "field 'value' is required for CrAST_MatchSingleton");
 		return NULL;
 	}
-	pattern = (pattern_type)Mem_Alloc(sizeof(*pattern));
+	pattern = (pattern_type)CrArena_Alloc(arena, sizeof(*pattern));
 	if (!pattern)
 		return NULL;
 	pattern->kind = MatchSingleton_kind;
@@ -1436,10 +1436,10 @@ pattern_type CrAST_MatchSingleton(constant value, int lineno, int col_offset, in
 	return pattern;
 }
 
-pattern_type CrAST_MatchSequence(ast_pattern_seq* patterns, int lineno, int col_offset, int end_lineno, int end_col_offset)
+pattern_type CrAST_MatchSequence(ast_pattern_seq* patterns, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	pattern_type pattern;
-	pattern = (pattern_type)Mem_Alloc(sizeof(*pattern));
+	pattern = (pattern_type)CrArena_Alloc(arena, sizeof(*pattern));
 	if (!pattern)
 		return NULL;
 	pattern->kind = MatchSequence_kind;
@@ -1451,10 +1451,10 @@ pattern_type CrAST_MatchSequence(ast_pattern_seq* patterns, int lineno, int col_
 	return pattern;
 }
 
-pattern_type CrAST_MatchMapping(ast_expr_seq* keys, ast_pattern_seq* patterns, identifier rest, int lineno, int col_offset, int end_lineno, int end_col_offset)
+pattern_type CrAST_MatchMapping(ast_expr_seq* keys, ast_pattern_seq* patterns, identifier rest, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	pattern_type pattern;
-	pattern = (pattern_type)Mem_Alloc(sizeof(*pattern));
+	pattern = (pattern_type)CrArena_Alloc(arena, sizeof(*pattern));
 	if (!pattern)
 		return NULL;
 	pattern->kind = MatchMapping_kind;
@@ -1468,14 +1468,14 @@ pattern_type CrAST_MatchMapping(ast_expr_seq* keys, ast_pattern_seq* patterns, i
 	return pattern;
 }
 
-pattern_type CrAST_MatchClass(expr_type cls, ast_pattern_seq* patterns, ast_identifier_seq* kwd_attrs, ast_pattern_seq* kwd_patterns, int lineno, int col_offset, int end_lineno, int end_col_offset)
+pattern_type CrAST_MatchClass(expr_type cls, ast_pattern_seq* patterns, ast_identifier_seq* kwd_attrs, ast_pattern_seq* kwd_patterns, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	pattern_type pattern;
 	if (!cls) {
 		CrError_SetString(CrExc_ValueError, "field 'cls' is required for CrAST_MatchClass");
 		return NULL;
 	}
-	pattern = (pattern_type)Mem_Alloc(sizeof(*pattern));
+	pattern = (pattern_type)CrArena_Alloc(arena, sizeof(*pattern));
 	if (!pattern)
 		return NULL;
 	pattern->kind = MatchClass_kind;
@@ -1490,10 +1490,10 @@ pattern_type CrAST_MatchClass(expr_type cls, ast_pattern_seq* patterns, ast_iden
 	return pattern;
 }
 
-pattern_type CrAST_MatchStar(identifier name, int lineno, int col_offset, int end_lineno, int end_col_offset)
+pattern_type CrAST_MatchStar(identifier name, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	pattern_type p;
-	p = (pattern_type)Mem_Alloc(sizeof(*p));
+	p = (pattern_type)CrArena_Alloc(arena, sizeof(*p));
 	if (!p)
 		return NULL;
 	p->kind = MatchStar_kind;
@@ -1505,10 +1505,10 @@ pattern_type CrAST_MatchStar(identifier name, int lineno, int col_offset, int en
 	return p;
 }
 
-pattern_type CrAST_MatchAs(pattern_type pattern, identifier name, int lineno, int col_offset, int end_lineno, int end_col_offset)
+pattern_type CrAST_MatchAs(pattern_type pattern, identifier name, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	pattern_type p;
-	p = (pattern_type)Mem_Alloc(sizeof(*p));
+	p = (pattern_type)CrArena_Alloc(arena, sizeof(*p));
 	if (!p)
 		return NULL;
 	p->kind = MatchAs_kind;
@@ -1521,10 +1521,10 @@ pattern_type CrAST_MatchAs(pattern_type pattern, identifier name, int lineno, in
 	return p;
 }
 
-pattern_type CrAST_MatchOr(ast_pattern_seq* patterns, int lineno, int col_offset, int end_lineno, int end_col_offset)
+pattern_type CrAST_MatchOr(ast_pattern_seq* patterns, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena)
 {
 	pattern_type pattern;
-	pattern = (pattern_type)Mem_Alloc(sizeof(*pattern));
+	pattern = (pattern_type)CrArena_Alloc(arena, sizeof(*pattern));
 	if (!pattern)
 		return NULL;
 	pattern->kind = MatchOr_kind;
@@ -1536,14 +1536,14 @@ pattern_type CrAST_MatchOr(ast_pattern_seq* patterns, int lineno, int col_offset
 	return pattern;
 }
 
-type_ignore_type CrAST_TypeIgnore(int lineno, string tag)
+type_ignore_type CrAST_TypeIgnore(int lineno, string tag, CrArena* arena)
 {
 	type_ignore_type type_ignore;
 	if (!tag) {
 		CrError_SetString(CrExc_ValueError, "field 'tag' is required for CrAST_TypeIgnore");
 		return NULL;
 	}
-	type_ignore = (type_ignore_type)Mem_Alloc(sizeof(*type_ignore));
+	type_ignore = (type_ignore_type)CrArena_Alloc(arena, sizeof(*type_ignore));
 	if (!type_ignore)
 		return NULL;
 	type_ignore->kind = TypeIgnore_kind;

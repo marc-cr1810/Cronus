@@ -35,7 +35,7 @@ static inline void* CHECK_CALL(Parser* p, void* result)
 
 #define CHECK(type, result) ((type) CHECK_CALL(p, result))
 
-#define EXTRA start_lineno, start_col_offset, end_lineno, end_col_offset
+#define EXTRA start_lineno, start_col_offset, end_lineno, end_col_offset, p->arena
 
 static const int keywordListSize = KEYWORD_COUNT;
 static KeywordToken keywords[][KEYWORDS_MAX] = {
@@ -135,7 +135,7 @@ static mod_type rule_interactive_mode(Parser* p)
 			)
 		{
 			CrParser_PrintSuccess("interactive_mode", "statement_newline");
-			result = CrAST_Interactive(stmt_sq);
+			result = CrAST_Interactive(stmt_sq, p->arena);
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
@@ -334,7 +334,7 @@ static void* parser_parse(Parser* p)
 
 // API function definitions
 
-Parser* CrParser_New(TokState* tok, int startRule, int* error_code)
+Parser* CrParser_New(TokState* tok, int startRule, int* error_code, CrArena* arena)
 {
 	Parser* p = (Parser*)Mem_Alloc(sizeof(Parser));
 	if (p == NULL)
@@ -351,6 +351,8 @@ Parser* CrParser_New(TokState* tok, int startRule, int* error_code)
 	p->flags = 0;
 	p->starting_lineno = 0;
 	p->starting_col_offset = 0;
+
+	p->arena = arena;
 
 	p->tok = tok;
 	p->tokens = (Token**)Mem_Alloc(sizeof(Token*));

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <core/arena.h>
 #include <parser/ast.h>
 #include <parser/tokenizer.h>
 
@@ -48,6 +49,8 @@ typedef struct _parser
 	int starting_lineno;
 	int starting_col_offset;
 
+	CrArena* arena;
+
 	TokState* tok;
 	Token** tokens;
 	int fill, size;
@@ -59,7 +62,7 @@ typedef struct _parser
 	int level;
 } Parser;
 
-Parser* CrParser_New(TokState* tok, int startRule, int* error_code);
+Parser* CrParser_New(TokState* tok, int startRule, int* error_code, CrArena* arena);
 
 void* CrParser_Parse(Parser* p);
 void CrParser_Free(Parser* p);

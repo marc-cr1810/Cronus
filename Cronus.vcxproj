@@ -142,6 +142,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src\config.h" />
+    <ClInclude Include="src\core\arena.h" />
     <ClInclude Include="src\core\cronusrun.h" />
     <ClInclude Include="src\core\ctype.h" />
     <ClInclude Include="src\core\errorcode.h" />
@@ -169,6 +170,7 @@
     <ClInclude Include="src\port.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\core\arena.cpp" />
     <ClCompile Include="src\core\cronusrun.cpp" />
     <ClCompile Include="src\core\ctype.cpp" />
     <ClCompile Include="src\core\interpreter.cpp" />

@@ -146,6 +146,7 @@ int CrRun_InteractiveObject(std::ifstream* fp, CrObject* filename)
 	const char* ps1 = NULL, * ps2 = NULL;
 	int error_code = 0;
 	mod_type mod;
+	CrArena* arena;
 
 	if (Cr_FileIsInteractive(fp, filename))
 	{
@@ -153,9 +154,14 @@ int CrRun_InteractiveObject(std::ifstream* fp, CrObject* filename)
 		ps2 = "... ";
 	}
 
-	mod = CrGen_ASTFromFileObject(fp, filename, PARSER_MODE_SINGLE_INPUT, ps1, ps2, &error_code);
+	arena = CrArena_New();
+	if (arena == NULL)
+		return -1;
+
+	mod = CrGen_ASTFromFileObject(fp, filename, PARSER_MODE_SINGLE_INPUT, ps1, ps2, &error_code, arena);
 	if (mod == NULL)
 	{
+		CrArena_Free(arena);
 		if (error_code == E_EOF)
 		{
 			CrError_Clear();
@@ -164,6 +170,7 @@ int CrRun_InteractiveObject(std::ifstream* fp, CrObject* filename)
 		return -1;
 	}
 
+	CrArena_Free(arena);
 	return 0;
 }
 

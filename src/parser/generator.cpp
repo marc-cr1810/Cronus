@@ -342,7 +342,7 @@ Token* CrGen_GetLastNonWhitespaceToken(Parser* p)
 ast_seq* CrGen_SingletonSeq(Parser* p, void* a)
 {
 	assert(a != NULL);
-	ast_seq* seq = (ast_seq*)CrAST_NewGenericSeq(1);
+	ast_seq* seq = (ast_seq*)CrAST_NewGenericSeq(1, p->arena);
 	if (!seq)
 		return NULL;
 	CrAST_SEQ_SET_UNTYPED(seq, 0, a);
@@ -358,7 +358,7 @@ ast_stmt_seq* CrGen_InteractiveExit(Parser* p)
 	return NULL;
 }
 
-mod_type CrGen_ASTFromFileObject(std::ifstream* fp, CrObject* filename, int mode, const char* ps1, const char* ps2, int* error_code)
+mod_type CrGen_ASTFromFileObject(std::ifstream* fp, CrObject* filename, int mode, const char* ps1, const char* ps2, int* error_code, CrArena* arena)
 {
 	TokState* tok = CrTokenizer_FromFile(fp, ps1, ps2);
 	if (tok == NULL)
@@ -372,7 +372,7 @@ mod_type CrGen_ASTFromFileObject(std::ifstream* fp, CrObject* filename, int mode
 
 	mod_type result = NULL;
 
-	Parser* p = CrParser_New(tok, mode, error_code);
+	Parser* p = CrParser_New(tok, mode, error_code, arena);
 	if (p == NULL)
 		goto error;
 

@@ -2,6 +2,7 @@
 
 #include <port.h>
 #include <objects/object.h>
+#include <core/arena.h>
 
 typedef CrObject* identifier;
 typedef CrObject* object;
@@ -92,9 +93,9 @@ typedef struct
 	int typed_elements[1];
 } ast_int_seq;
 
-ast_generic_seq* CrAST_NewGenericSeq(Cr_size_t size);
-ast_identifier_seq* CrAST_NewIdentifierSeq(Cr_size_t size);
-ast_int_seq* CrAST_NewIntSeq(Cr_size_t size);
+ast_generic_seq* CrAST_NewGenericSeq(Cr_size_t size, CrArena* arena);
+ast_identifier_seq* CrAST_NewIdentifierSeq(Cr_size_t size, CrArena* arena);
+ast_int_seq* CrAST_NewIntSeq(Cr_size_t size, CrArena* arena);
 
 #define CrAST_SEQ_GET_UNTYPED(s, i) (s)->elements[(i)]
 #define CrAST_SEQ_GET(s, i) (s)->typed_elements[(i)]
@@ -704,108 +705,108 @@ struct _type_ignore
 
 /* Create nodes */
 
-mod_type CrAST_Module(ast_stmt_seq* body, ast_type_ignore_seq* type_ignores);
-mod_type CrAST_Interactive(ast_stmt_seq* body);
-mod_type CrAST_FunctionType(ast_expr_seq* arg_types, expr_type returns);
+mod_type CrAST_Module(ast_stmt_seq* body, ast_type_ignore_seq* type_ignores, CrArena* arena);
+mod_type CrAST_Interactive(ast_stmt_seq* body, CrArena* arena);
+mod_type CrAST_FunctionType(ast_expr_seq* arg_types, expr_type returns, CrArena* arena);
 
 stmt_type CrAST_FunctionDef(identifier name, arguments_type args, ast_stmt_seq* body,
 	ast_expr_seq* decorator_list, expr_type returns, string type_comment, 
-	int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 stmt_type CrAST_AsyncFunctionDef(identifier name, arguments_type args, ast_stmt_seq* body,
 	ast_expr_seq* decorator_list, expr_type returns, string type_comment,
-	int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 stmt_type CrAST_ClassDef(identifier name, ast_expr_seq* bases, ast_keyword_seq* keywords, ast_stmt_seq* body, ast_expr_seq* decorator_list,
-	int lineno, int col_offset, int end_lineno, int end_col_offset);
-stmt_type CrAST_Return(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
-stmt_type CrAST_Delete(ast_expr_seq* targets, int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+stmt_type CrAST_Return(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+stmt_type CrAST_Delete(ast_expr_seq* targets, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 stmt_type CrAST_Assign(ast_expr_seq* targets, expr_type value, string type_comment,
-	int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 stmt_type CrAST_AugAssign(expr_type target, operator_type op, expr_type value,
-	int lineno, int	col_offset, int end_lineno, int end_col_offset);
+	int lineno, int	col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 stmt_type CrAST_AnnAssign(expr_type target, expr_type annotation, expr_type value, int simple,
-	int lineno, int col_offset, int end_lineno, int	end_col_offset);
+	int lineno, int col_offset, int end_lineno, int	end_col_offset, CrArena* arena);
 stmt_type CrAST_For(expr_type target, expr_type iter, ast_stmt_seq* body, ast_stmt_seq* orelse, string type_comment,
-	int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 stmt_type CrAST_AsyncFor(expr_type target, expr_type iter, ast_stmt_seq* body, ast_stmt_seq* orelse, string type_comment,
-	int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 stmt_type CrAST_While(expr_type test, ast_stmt_seq* body, ast_stmt_seq* orelse, 
-	int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 stmt_type CrAST_If(expr_type test, ast_stmt_seq* body, ast_stmt_seq* orelse,
-	int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 stmt_type CrAST_With(ast_withitem_seq* items, ast_stmt_seq* body, string type_comment, 
-	int lineno, int col_offset, int end_lineno, int	end_col_offset);
+	int lineno, int col_offset, int end_lineno, int	end_col_offset, CrArena* arena);
 stmt_type CrAST_AsyncWith(ast_withitem_seq* items, ast_stmt_seq* body, string type_comment,
-	int lineno, int col_offset, int end_lineno, int	end_col_offset);
+	int lineno, int col_offset, int end_lineno, int	end_col_offset, CrArena* arena);
 stmt_type CrAST_Match(expr_type subject, ast_match_case_seq* cases,
-	int lineno, int	col_offset, int end_lineno, int end_col_offset);
-stmt_type CrAST_Raise(expr_type exc, expr_type cause, int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int lineno, int	col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+stmt_type CrAST_Raise(expr_type exc, expr_type cause, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 stmt_type CrAST_Try(ast_stmt_seq* body, ast_excepthandler_seq* handlers, ast_stmt_seq* orelse, ast_stmt_seq* finalbody,
-	int lineno, int	col_offset, int end_lineno, int end_col_offset);
+	int lineno, int	col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 stmt_type CrAST_TryStar(ast_stmt_seq* body, ast_excepthandler_seq* handlers, ast_stmt_seq* orelse, ast_stmt_seq* finalbody,
-	int lineno, int	col_offset, int end_lineno, int end_col_offset);
-stmt_type CrAST_Assert(expr_type test, expr_type msg, int lineno, int col_offset, int end_lineno, int end_col_offset);
-stmt_type CrAST_Import(ast_alias_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset);
-stmt_type CrAST_ImportFrom(identifier module, ast_alias_seq* names, int level, int lineno, int col_offset, int end_lineno, int end_col_offset);
-stmt_type CrAST_Global(ast_identifier_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset);
-stmt_type CrAST_Nonlocal(ast_identifier_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset);
-stmt_type CrAST_Expr(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
-stmt_type CrAST_Pass(int lineno, int col_offset, int end_lineno, int end_col_offset);
-stmt_type CrAST_Break(int lineno, int col_offset, int end_lineno, int end_col_offset);
-stmt_type CrAST_Continue(int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int lineno, int	col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+stmt_type CrAST_Assert(expr_type test, expr_type msg, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+stmt_type CrAST_Import(ast_alias_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+stmt_type CrAST_ImportFrom(identifier module, ast_alias_seq* names, int level, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+stmt_type CrAST_Global(ast_identifier_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+stmt_type CrAST_Nonlocal(ast_identifier_seq* names, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+stmt_type CrAST_Expr(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+stmt_type CrAST_Pass(int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+stmt_type CrAST_Break(int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+stmt_type CrAST_Continue(int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 
-expr_type CrAST_BoolOp(boolop_type op, ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_BinOp(expr_type left, operator_type op, expr_type right, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_UnaryOp(unaryop_type op, expr_type operand, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_NamedExpr(expr_type target, expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_Lambda(arguments_type args, expr_type body, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_IfExp(expr_type test, expr_type body, expr_type orelse, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_Dict(ast_expr_seq* keys, ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_Set(ast_expr_seq* elts, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_ListComp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_SetComp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset);
+expr_type CrAST_BoolOp(boolop_type op, ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_BinOp(expr_type left, operator_type op, expr_type right, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_UnaryOp(unaryop_type op, expr_type operand, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_NamedExpr(expr_type target, expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_Lambda(arguments_type args, expr_type body, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_IfExp(expr_type test, expr_type body, expr_type orelse, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_Dict(ast_expr_seq* keys, ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_Set(ast_expr_seq* elts, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_ListComp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_SetComp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 expr_type CrAST_DictComp(expr_type key, expr_type value, ast_comprehension_seq* generators,
-	int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_GeneratorExp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_Await(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_Yield(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_YieldFrom(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_GeneratorExp(expr_type elt, ast_comprehension_seq* generators, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_Await(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_Yield(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_YieldFrom(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 expr_type CrAST_Compare(expr_type left, ast_int_seq* ops, ast_expr_seq* comparators,
-	int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 expr_type CrAST_Call(expr_type func, ast_expr_seq* args, ast_keyword_seq* keywords,
-	int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 expr_type CrAST_FormattedValue(expr_type value, int conversion, expr_type format_spec,
-	int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_JoinedStr(ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_Constant(constant value, string kind, int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_JoinedStr(ast_expr_seq* values, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_Constant(constant value, string kind, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 expr_type CrAST_Attribute(expr_type value, identifier attr, expr_context_type ctx, 
-	int	lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_Subscript(expr_type value, expr_type slice, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_Starred(expr_type value, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_Name(identifier id, expr_context_type ctx, int lineno, int col_offset, int	end_lineno, int end_col_offset);
-expr_type CrAST_List(ast_expr_seq* elts, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_Tuple(ast_expr_seq* elts, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset);
-expr_type CrAST_Slice(expr_type lower, expr_type upper, expr_type step, int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int	lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_Subscript(expr_type value, expr_type slice, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_Starred(expr_type value, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_Name(identifier id, expr_context_type ctx, int lineno, int col_offset, int	end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_List(ast_expr_seq* elts, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_Tuple(ast_expr_seq* elts, expr_context_type ctx, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+expr_type CrAST_Slice(expr_type lower, expr_type upper, expr_type step, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 
-comprehension_type CrAST_Comprehension(expr_type target, expr_type iter, ast_expr_seq* ifs, int is_async);
+comprehension_type CrAST_Comprehension(expr_type target, expr_type iter, ast_expr_seq* ifs, int is_async, CrArena* arena);
 excepthandler_type CrAST_ExceptHandler(expr_type type, identifier name, ast_stmt_seq* body,
-	int	lineno, int col_offset, int end_lineno, int end_col_offset);
+	int	lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 arguments_type CrAST_Arguments(ast_arg_seq* posonlyargs, ast_arg_seq* args, arg_type vararg,
-	ast_arg_seq* kwonlyargs, ast_expr_seq* kw_defaults, arg_type kwarg, ast_expr_seq* defaults);
-arg_type CrAST_Arg(identifier arg, expr_type annotation, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset);
-keyword_type CrAST_Keyword(identifier arg, expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
-alias_type CrAST_Alias(identifier name, identifier asname, int lineno, int col_offset, int end_lineno, int end_col_offset);
-withitem_type CrAST_WithItem(expr_type context_expr, expr_type optional_vars);
-match_case_type CrAST_MatchCase(pattern_type pattern, expr_type guard, ast_stmt_seq* body);
+	ast_arg_seq* kwonlyargs, ast_expr_seq* kw_defaults, arg_type kwarg, ast_expr_seq* defaults, CrArena* arena);
+arg_type CrAST_Arg(identifier arg, expr_type annotation, string type_comment, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+keyword_type CrAST_Keyword(identifier arg, expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+alias_type CrAST_Alias(identifier name, identifier asname, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+withitem_type CrAST_WithItem(expr_type context_expr, expr_type optional_vars, CrArena* arena);
+match_case_type CrAST_MatchCase(pattern_type pattern, expr_type guard, ast_stmt_seq* body, CrArena* arena);
 
-pattern_type CrAST_MatchValue(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset);
-pattern_type CrAST_MatchSingleton(constant value, int lineno, int col_offset, int end_lineno, int end_col_offset);
-pattern_type CrAST_MatchSequence(ast_pattern_seq* patterns, int lineno, int col_offset, int end_lineno, int end_col_offset);
+pattern_type CrAST_MatchValue(expr_type value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+pattern_type CrAST_MatchSingleton(constant value, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+pattern_type CrAST_MatchSequence(ast_pattern_seq* patterns, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 pattern_type CrAST_MatchMapping(ast_expr_seq* keys, ast_pattern_seq* patterns, identifier rest,
-	int lineno, int col_offset, int	end_lineno, int end_col_offset);
+	int lineno, int col_offset, int	end_lineno, int end_col_offset, CrArena* arena);
 pattern_type CrAST_MatchClass(expr_type cls, ast_pattern_seq* patterns, ast_identifier_seq* kwd_attrs, ast_pattern_seq* kwd_patterns,
-	int lineno, int	col_offset, int end_lineno, int end_col_offset);
-pattern_type CrAST_MatchStar(identifier name, int lineno, int col_offset, int end_lineno, int end_col_offset);
-pattern_type CrAST_MatchAs(pattern_type pattern, identifier name, int lineno, int col_offset, int end_lineno, int end_col_offset);
-pattern_type CrAST_MatchOr(ast_pattern_seq* patterns, int lineno, int col_offset, int end_lineno, int end_col_offset);
+	int lineno, int	col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+pattern_type CrAST_MatchStar(identifier name, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+pattern_type CrAST_MatchAs(pattern_type pattern, identifier name, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
+pattern_type CrAST_MatchOr(ast_pattern_seq* patterns, int lineno, int col_offset, int end_lineno, int end_col_offset, CrArena* arena);
 
-type_ignore_type CrAST_TypeIgnore(int lineno, string tag);
+type_ignore_type CrAST_TypeIgnore(int lineno, string tag, CrArena* arena);

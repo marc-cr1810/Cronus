@@ -20,11 +20,13 @@ enum token_type
 	TOK_FUNC,			// func
 	TOK_NULL,			// Null
 	TOK_TRUE,			// True
+	TOK_FROM,			// from
 	TOK_WHILE,			// while
 	TOK_CLASS,			// class
 	TOK_ASYNC,			// async
 	TOK_AWAIT,			// await
 	TOK_FALSE,			// False
+	TOK_YIELD,			// yield
 	TOK_EXTENSION,		// extension
 
 	/* Operator tokens */

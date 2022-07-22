@@ -446,6 +446,30 @@ expr_type CrGen_NumberToken(Parser* p)
 	return CrAST_Constant(num, NULL, t->lineno, t->col_offset, t->end_lineno, t->end_col_offset, p->arena);
 }
 
+static expr_type CrGen_NameFromToken(Parser* p, Token* t)
+{
+	if (t == NULL) {
+		return NULL;
+	}
+	const char* s = CrString_ToString(t->value);
+	if (!s) {
+		p->error_indicator = 1;
+		return NULL;
+	}
+	CrObject* id = CrGen_NewIdentifier(p, s);
+	if (id == NULL) {
+		p->error_indicator = 1;
+		return NULL;
+	}
+	return CrAST_Name(id, Load, t->lineno, t->col_offset, t->end_lineno, t->end_col_offset, p->arena);
+}
+
+expr_type CrGen_NameToken(Parser* p)
+{
+	Token* t = CrGen_ExpectToken(p, TOK_NAME);
+	return CrGen_NameFromToken(p, t);
+}
+
 ast_seq* CrGen_SingletonSeq(Parser* p, void* a)
 {
 	assert(a != NULL);
@@ -488,4 +512,44 @@ mod_type CrGen_ASTFromFileObject(std::ifstream* fp, CrObject* filename, int mode
 error:
 	CrTokenizer_Free(tok);
 	return result;
+}
+
+CrObject* CrGen_NewIdentifier(Parser* p, const char* n)
+{
+	CrObject* id = CrStringObject_FromString(n);
+	if (!id)
+		goto error;
+
+	if (CrArena_AddCrObject(p->arena, id) < 0)
+	{
+		CrObject_DECREF(id);
+		goto error;
+	}
+	return id;
+error:
+	p->error_indicator = 1;
+	return NULL;
+}
+
+CrObject* CrGen_NewTypeComment(Parser* p, Token* tc)
+{
+	CrObject* tco;
+	if (tc == NULL)
+		return NULL;
+	const char* str = CrString_ToString(tc->value);
+	if (str == NULL)
+		goto error;
+
+	tco = CrStringObject_FromString(str);
+	if (tco == NULL)
+		goto error;
+	if (CrArena_AddCrObject(p->arena, tco) < 0)
+	{
+		CrObject_DECREF(tco);
+		goto error;
+	}
+	return tco;
+error:
+	p->error_indicator = 1;
+	return NULL;
 }

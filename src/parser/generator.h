@@ -29,6 +29,7 @@ Token* CrGen_GetLastNonWhitespaceToken(Parser* p);
 
 void* CrGen_StringToken(Parser* p);
 expr_type CrGen_NumberToken(Parser* p);
+expr_type CrGen_NameToken(Parser* p);
 
 /* AST Functions */
 
@@ -37,3 +38,8 @@ ast_seq* CrGen_SingletonSeq(Parser* p, void* a);
 ast_stmt_seq* CrGen_InteractiveExit(Parser* p);
 
 mod_type CrGen_ASTFromFileObject(std::ifstream* fp, CrObject* filename, int mode, const char* ps1, const char* ps2, int* error_code, CrArena* arena);
+
+/* Misc functions */
+
+CrObject* CrGen_NewIdentifier(Parser* p, const char* n);
+CrObject* CrGen_NewTypeComment(Parser* p, Token* tc);

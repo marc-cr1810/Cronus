@@ -59,6 +59,7 @@ static KeywordToken keywords[][KEYWORDS_MAX] = {
 		{"func", TOK_FUNC},
 		{"Null", TOK_NULL},
 		{"True", TOK_TRUE},
+		{"from", TOK_FROM},
 		{NULL, TOK_UNKNOWN}
 	},
 	{ // 5
@@ -67,6 +68,7 @@ static KeywordToken keywords[][KEYWORDS_MAX] = {
 		{"async", TOK_ASYNC},
 		{"await", TOK_AWAIT},
 		{"False", TOK_FALSE},
+		{"yield", TOK_YIELD},
 		{NULL, TOK_UNKNOWN}
 	},
 	{ // 6
@@ -119,8 +121,22 @@ static KeywordToken keywords[][KEYWORDS_MAX] = {
 #define type_atom 1025
 #define type_strings 1026
 #define type_loop_strings 1027
+#define type_looprule_14 1028
+#define type_gatherrule_219 1029
+#define type_star_targets 1030
+#define type_star_target 1031
+#define type_target_with_star_atom 1032
+#define type_star_atom 1033
+#define type_gatherrule_15 1034
+#define type_yield_expr 1035
 
 // Forward declarations
+/*
+* NOTE: All of this is temporary. Eventually I'll finish my code writing tool to generate all of these automatically from
+* the rules. This way I won't have to hand write every single function by hand which would take forever.
+* 
+* This is just to test to make sure its working and get the formatting of the functions correct.
+*/
 
 static mod_type rule_file_mode(Parser* p);
 static mod_type rule_interactive_mode(Parser* p);
@@ -152,6 +168,18 @@ static expr_type rule_primary(Parser* p);
 static expr_type rule_atom(Parser* p);
 static expr_type rule_strings(Parser* p);
 static ast_seq* rule_loop_string(Parser* p);
+static expr_type rule_star_targets(Parser* p);
+static expr_type rule_star_target(Parser* p);
+static expr_type rule_target_with_star_atom(Parser* p);
+static expr_type rule_star_atom(Parser* p);
+static expr_type rule_yield_expr(Parser* p);
+
+// Loops, gathers, etc
+static ast_seq* looprule_14(Parser* p);
+
+static void* gatherrule_15(Parser* p);
+static void* gatherrule_219(Parser* p);
+
 //
 // Definitions
 //
@@ -173,7 +201,7 @@ static mod_type rule_interactive_mode(Parser* p)
 	{ // statement_newline
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("interactive_mode", "statement_newline");
@@ -188,7 +216,7 @@ static mod_type rule_interactive_mode(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -198,7 +226,7 @@ static mod_type rule_interactive_mode(Parser* p)
 	}
 	result = NULL;
 done:
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -226,7 +254,7 @@ static ast_stmt_seq* rule_statement_newline(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return NULL;
 	}
 
@@ -237,7 +265,7 @@ static ast_stmt_seq* rule_statement_newline(Parser* p)
 	{ // simple_statements
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("statement_newline", "simple_statements");
@@ -256,7 +284,7 @@ static ast_stmt_seq* rule_statement_newline(Parser* p)
 	{ // NEWLINE
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("statement_newline", "NEWLINE");
@@ -269,7 +297,7 @@ static ast_stmt_seq* rule_statement_newline(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -278,7 +306,7 @@ static ast_stmt_seq* rule_statement_newline(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -289,7 +317,7 @@ static ast_stmt_seq* rule_statement_newline(Parser* p)
 	{ // $
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("statement_newline", "$");
@@ -303,7 +331,7 @@ static ast_stmt_seq* rule_statement_newline(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -313,7 +341,7 @@ static ast_stmt_seq* rule_statement_newline(Parser* p)
 	}
 	result = NULL;
 done:
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -327,7 +355,7 @@ static ast_stmt_seq* rule_simple_statements(Parser* p)
 	{ // simple_statement NEWLINE
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("simple_statements", "simple_statement NEWLINE");
@@ -344,7 +372,7 @@ static ast_stmt_seq* rule_simple_statements(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -353,7 +381,7 @@ static ast_stmt_seq* rule_simple_statements(Parser* p)
 		CrParser_PrintFail("simple_statements", "simple_statement NEWLINE");
 	}
 done:
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -378,14 +406,14 @@ static stmt_type rule_simple_statement(Parser* p)
 	stmt_type result = NULL;
 	if (CrGen_IsMemoized(p, type_simple_statement, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 	int mark = p->mark;
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return NULL;
 	}
 
@@ -394,7 +422,7 @@ static stmt_type rule_simple_statement(Parser* p)
 	{ // assignment
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("simple_statement", "assignment");
@@ -413,7 +441,7 @@ static stmt_type rule_simple_statement(Parser* p)
 	{ // star_expressions
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("simple_statement", "star_expressions");
@@ -426,7 +454,7 @@ static stmt_type rule_simple_statement(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -435,7 +463,7 @@ static stmt_type rule_simple_statement(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -446,7 +474,7 @@ static stmt_type rule_simple_statement(Parser* p)
 	result = NULL;
 done:
 	CrGen_Memo_Insert(p, mark, type_simple_statement, result);
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -465,16 +493,58 @@ static stmt_type rule_assignment(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return NULL;
 	}
 
 	int start_lineno = p->tokens[mark]->lineno;
 	int start_col_offset = p->tokens[mark]->col_offset;
 
+	{ // ((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?
+		if (p->error_indicator)
+		{
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("assignment", "((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?");
+		ast_expr_seq* targets;
+		void* expr;
+		Token* tc;
+		if (
+			(targets = (ast_expr_seq*)looprule_14(p)) // ((star_targets '='))+
+			&&
+			(expr = gatherrule_15(p)) // yeild_expr | star_expressions
+			&&
+			(CrGen_LookaheadWithInt(0, CrGen_ExpectToken, p, TOK_EQUAL)) // token != '='
+			&&
+			(tc = CrGen_ExpectToken(p, TOK_TYPE_COMMENT), !p->error_indicator)
+			)
+		{
+			CrParser_PrintSuccess("assignment", "((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?");
+			Token* token = CrGen_GetLastNonWhitespaceToken(p);
+			if (token == NULL)
+			{
+				p->level--;
+				return NULL;
+			}
+			int end_lineno = token->end_lineno;
+			int end_col_offset = token->end_col_offset;
+			result = CrAST_Assign(targets, (expr_type)expr, CrGen_NewTypeComment(p, tc), EXTRA);
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("assignment", "((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?");
+	}
+
 	result = NULL;
 done:
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -491,7 +561,7 @@ static expr_type rule_star_expressions(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return NULL;
 	}
 
@@ -500,7 +570,7 @@ static expr_type rule_star_expressions(Parser* p)
 	{ // star_expression
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("star_expressions", "star_expression");
@@ -518,7 +588,7 @@ static expr_type rule_star_expressions(Parser* p)
 	}
 	result = NULL;
 done:
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -530,7 +600,7 @@ static expr_type rule_star_expression(Parser* p)
 	expr_type result = NULL;
 	if (CrGen_IsMemoized(p, type_star_expression, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -538,7 +608,7 @@ static expr_type rule_star_expression(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -547,7 +617,7 @@ static expr_type rule_star_expression(Parser* p)
 	{ // expression
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("star_expression", "expression");
@@ -566,7 +636,7 @@ static expr_type rule_star_expression(Parser* p)
 	result = NULL;
 done:
 	CrGen_Memo_Insert(p, mark, type_star_expression, result);
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -578,7 +648,7 @@ static expr_type rule_expression(Parser* p)
 	expr_type result = NULL;
 	if (CrGen_IsMemoized(p, type_expression, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -586,7 +656,7 @@ static expr_type rule_expression(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -595,7 +665,7 @@ static expr_type rule_expression(Parser* p)
 	{ // disjunction
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("expression", "disjunction");
@@ -614,7 +684,7 @@ static expr_type rule_expression(Parser* p)
 	result = NULL;
 done:
 	CrGen_Memo_Insert(p, mark, type_expression, result);
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -626,7 +696,7 @@ static expr_type rule_disjunction(Parser* p)
 	expr_type result = NULL;
 	if (CrGen_IsMemoized(p, type_disjunction, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -634,7 +704,7 @@ static expr_type rule_disjunction(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -643,7 +713,7 @@ static expr_type rule_disjunction(Parser* p)
 	{ // conjunction
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("disjunction", "conjunction");
@@ -662,7 +732,7 @@ static expr_type rule_disjunction(Parser* p)
 	result = NULL;
 done:
 	CrGen_Memo_Insert(p, mark, type_disjunction, result);
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -674,7 +744,7 @@ static expr_type rule_conjunction(Parser* p)
 	expr_type result = NULL;
 	if (CrGen_IsMemoized(p, type_conjunction, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -682,7 +752,7 @@ static expr_type rule_conjunction(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -691,7 +761,7 @@ static expr_type rule_conjunction(Parser* p)
 	{ // inversion
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("conjunction", "inversion");
@@ -710,7 +780,7 @@ static expr_type rule_conjunction(Parser* p)
 	result = NULL;
 done:
 	CrGen_Memo_Insert(p, mark, type_conjunction, result);
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -722,7 +792,7 @@ static expr_type rule_inversion(Parser* p)
 	expr_type result = NULL;
 	if (CrGen_IsMemoized(p, type_inversion, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -730,7 +800,7 @@ static expr_type rule_inversion(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -739,7 +809,7 @@ static expr_type rule_inversion(Parser* p)
 	{ // comparison
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("inversion", "comparison");
@@ -758,7 +828,7 @@ static expr_type rule_inversion(Parser* p)
 	result = NULL;
 done:
 	CrGen_Memo_Insert(p, mark, type_inversion, result);
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -772,7 +842,7 @@ static expr_type rule_comparison(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -781,7 +851,7 @@ static expr_type rule_comparison(Parser* p)
 	{ // bitwise_or
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("comparison", "bitwise_or");
@@ -799,7 +869,7 @@ static expr_type rule_comparison(Parser* p)
 	}
 	result = NULL;
 done:
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -814,7 +884,7 @@ static expr_type raw_bitwise_or(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -823,7 +893,7 @@ static expr_type raw_bitwise_or(Parser* p)
 	{ // bitwise_or '|' bitwise_xor
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("bitwise_xor", "bitwise_or '|' bitwise_xor");
@@ -842,7 +912,7 @@ static expr_type raw_bitwise_or(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -851,7 +921,7 @@ static expr_type raw_bitwise_or(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -862,7 +932,7 @@ static expr_type raw_bitwise_or(Parser* p)
 	{ // bitwise_xor
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("bitwise_or", "bitwise_xor");
@@ -880,7 +950,7 @@ static expr_type raw_bitwise_or(Parser* p)
 	}
 	result = NULL;
 done:
-	D(p->level--);
+	p->level--;
 	return result;
 }
 static expr_type rule_bitwise_or(Parser* p)
@@ -889,7 +959,7 @@ static expr_type rule_bitwise_or(Parser* p)
 	expr_type result = NULL;
 	if (CrGen_IsMemoized(p, type_bitwise_or, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 	int mark = p->mark;
@@ -899,7 +969,7 @@ static expr_type rule_bitwise_or(Parser* p)
 		int tmpvar = CrGen_Memo_Update(p, mark, type_bitwise_or, result);
 		if (tmpvar)
 		{
-			D(p->level--);
+			p->level--;
 			return result;
 		}
 		p->mark = mark;
@@ -912,7 +982,7 @@ static expr_type rule_bitwise_or(Parser* p)
 		result = (expr_type)raw;
 	}
 	p->mark = resmark;
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -927,7 +997,7 @@ static expr_type raw_bitwise_xor(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -936,7 +1006,7 @@ static expr_type raw_bitwise_xor(Parser* p)
 	{ // bitwise_xor '^' bitwise_and
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("bitwise_xor", "bitwise_xor '^' bitwise_and");
@@ -955,7 +1025,7 @@ static expr_type raw_bitwise_xor(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -964,7 +1034,7 @@ static expr_type raw_bitwise_xor(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -975,7 +1045,7 @@ static expr_type raw_bitwise_xor(Parser* p)
 	{ // bitwise_and
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("bitwise_xor", "bitwise_and");
@@ -993,7 +1063,7 @@ static expr_type raw_bitwise_xor(Parser* p)
 	}
 	result = NULL;
 done:
-	D(p->level--);
+	p->level--;
 	return result;
 }
 static expr_type rule_bitwise_xor(Parser* p)
@@ -1002,7 +1072,7 @@ static expr_type rule_bitwise_xor(Parser* p)
 	expr_type result = NULL;
 	if (CrGen_IsMemoized(p, type_bitwise_xor, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 	int mark = p->mark;
@@ -1012,7 +1082,7 @@ static expr_type rule_bitwise_xor(Parser* p)
 		int tmpvar = CrGen_Memo_Update(p, mark, type_bitwise_xor, result);
 		if (tmpvar)
 		{
-			D(p->level--);
+			p->level--;
 			return result;
 		}
 		p->mark = mark;
@@ -1025,7 +1095,7 @@ static expr_type rule_bitwise_xor(Parser* p)
 		result = (expr_type)raw;
 	}
 	p->mark = resmark;
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -1040,7 +1110,7 @@ static expr_type raw_bitwise_and(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -1049,7 +1119,7 @@ static expr_type raw_bitwise_and(Parser* p)
 	{ // bitwise_and '&' shift_expr
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("bitwise_and", "bitwise_and '&' shift_expr");
@@ -1068,7 +1138,7 @@ static expr_type raw_bitwise_and(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -1077,7 +1147,7 @@ static expr_type raw_bitwise_and(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -1088,7 +1158,7 @@ static expr_type raw_bitwise_and(Parser* p)
 	{ // shift_expr
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("bitwise_and", "shift_expr");
@@ -1106,7 +1176,7 @@ static expr_type raw_bitwise_and(Parser* p)
 	}
 	result = NULL;
 done:
-	D(p->level--);
+	p->level--;
 	return result;
 }
 static expr_type rule_bitwise_and(Parser* p)
@@ -1115,7 +1185,7 @@ static expr_type rule_bitwise_and(Parser* p)
 	expr_type result = NULL;
 	if (CrGen_IsMemoized(p, type_bitwise_and, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 	int mark = p->mark;
@@ -1125,7 +1195,7 @@ static expr_type rule_bitwise_and(Parser* p)
 		int tmpvar = CrGen_Memo_Update(p, mark, type_bitwise_and, result);
 		if (tmpvar)
 		{
-			D(p->level--);
+			p->level--;
 			return result;
 		}
 		p->mark = mark;
@@ -1138,7 +1208,7 @@ static expr_type rule_bitwise_and(Parser* p)
 		result = (expr_type)raw;
 	}
 	p->mark = resmark;
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -1153,7 +1223,7 @@ static expr_type raw_shift_expr(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -1162,7 +1232,7 @@ static expr_type raw_shift_expr(Parser* p)
 	{ // shift_expr '<<' sum
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("shift_expr", "shift_expr '<<' sum");
@@ -1181,7 +1251,7 @@ static expr_type raw_shift_expr(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -1190,7 +1260,7 @@ static expr_type raw_shift_expr(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -1201,7 +1271,7 @@ static expr_type raw_shift_expr(Parser* p)
 	{ // shift_expr '>>' sum
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("shift_expr", "shift_expr '>>' sum");
@@ -1220,7 +1290,7 @@ static expr_type raw_shift_expr(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -1229,7 +1299,7 @@ static expr_type raw_shift_expr(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -1240,7 +1310,7 @@ static expr_type raw_shift_expr(Parser* p)
 	{ // sum
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("shift_expr", "sum");
@@ -1258,7 +1328,7 @@ static expr_type raw_shift_expr(Parser* p)
 	}
 	result = NULL;
 done:
-	D(p->level--);
+	p->level--;
 	return result;
 }
 static expr_type rule_shift_expr(Parser* p)
@@ -1267,7 +1337,7 @@ static expr_type rule_shift_expr(Parser* p)
 	expr_type result = NULL;
 	if (CrGen_IsMemoized(p, type_shift_expr, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 	int mark = p->mark;
@@ -1277,7 +1347,7 @@ static expr_type rule_shift_expr(Parser* p)
 		int tmpvar = CrGen_Memo_Update(p, mark, type_shift_expr, result);
 		if (tmpvar)
 		{
-			D(p->level--);
+			p->level--;
 			return result;
 		}
 		p->mark = mark;
@@ -1290,7 +1360,7 @@ static expr_type rule_shift_expr(Parser* p)
 		result = (expr_type)raw;
 	}
 	p->mark = resmark;
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -1305,7 +1375,7 @@ static expr_type raw_sum(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -1314,7 +1384,7 @@ static expr_type raw_sum(Parser* p)
 	{ // sum '+' term 
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("sum", "sum '+' term");
@@ -1333,7 +1403,7 @@ static expr_type raw_sum(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -1342,7 +1412,7 @@ static expr_type raw_sum(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -1353,7 +1423,7 @@ static expr_type raw_sum(Parser* p)
 	{ // sum '-' term 
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("sum", "sum '-' term");
@@ -1372,7 +1442,7 @@ static expr_type raw_sum(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -1381,7 +1451,7 @@ static expr_type raw_sum(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -1392,7 +1462,7 @@ static expr_type raw_sum(Parser* p)
 	{ // term
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("sum", "term");
@@ -1410,7 +1480,7 @@ static expr_type raw_sum(Parser* p)
 	}
 	result = NULL;
 done:
-	D(p->level--);
+	p->level--;
 	return result;
 }
 static expr_type rule_sum(Parser* p)
@@ -1419,7 +1489,7 @@ static expr_type rule_sum(Parser* p)
 	expr_type result = NULL;
 	if (CrGen_IsMemoized(p, type_sum, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 	int mark = p->mark;
@@ -1429,7 +1499,7 @@ static expr_type rule_sum(Parser* p)
 		int tmpvar = CrGen_Memo_Update(p, mark, type_sum, result);
 		if (tmpvar)
 		{
-			D(p->level--);
+			p->level--;
 			return result;
 		}
 		p->mark = mark;
@@ -1442,7 +1512,7 @@ static expr_type rule_sum(Parser* p)
 		result = (expr_type)raw;
 	}
 	p->mark = resmark;
-	D(p->level--);
+	p->level--;
 	return result;
 }
 // Left-recursive
@@ -1462,7 +1532,7 @@ static expr_type raw_term(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -1471,7 +1541,7 @@ static expr_type raw_term(Parser* p)
 	{ // term '*' factor 
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("term", "term '*' factor");
@@ -1490,7 +1560,7 @@ static expr_type raw_term(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -1499,7 +1569,7 @@ static expr_type raw_term(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -1510,7 +1580,7 @@ static expr_type raw_term(Parser* p)
 	{ // term '/' factor 
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("term", "term '/' factor");
@@ -1529,7 +1599,7 @@ static expr_type raw_term(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -1538,7 +1608,7 @@ static expr_type raw_term(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -1549,7 +1619,7 @@ static expr_type raw_term(Parser* p)
 	{ // term '//' factor 
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("term", "term '//' factor");
@@ -1568,7 +1638,7 @@ static expr_type raw_term(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -1577,7 +1647,7 @@ static expr_type raw_term(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -1588,7 +1658,7 @@ static expr_type raw_term(Parser* p)
 	{ // term '%' factor 
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("term", "term '%' factor");
@@ -1607,7 +1677,7 @@ static expr_type raw_term(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -1616,7 +1686,7 @@ static expr_type raw_term(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -1627,7 +1697,7 @@ static expr_type raw_term(Parser* p)
 	{ // term '@' factor 
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("term", "term '@' factor");
@@ -1646,7 +1716,7 @@ static expr_type raw_term(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -1655,7 +1725,7 @@ static expr_type raw_term(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -1666,7 +1736,7 @@ static expr_type raw_term(Parser* p)
 	{ // factor
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("term", "term");
@@ -1684,7 +1754,7 @@ static expr_type raw_term(Parser* p)
 	}
 	result = NULL;
 done:
-	D(p->level--);
+	p->level--;
 	return result;
 }
 static expr_type rule_term(Parser* p)
@@ -1693,7 +1763,7 @@ static expr_type rule_term(Parser* p)
 	expr_type result = NULL;
 	if (CrGen_IsMemoized(p, type_term, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 	int mark = p->mark;
@@ -1703,7 +1773,7 @@ static expr_type rule_term(Parser* p)
 		int tmpvar = CrGen_Memo_Update(p, mark, type_term, result);
 		if (tmpvar)
 		{
-			D(p->level--);
+			p->level--;
 			return result;
 		}
 		p->mark = mark;
@@ -1716,7 +1786,7 @@ static expr_type rule_term(Parser* p)
 		result = (expr_type)raw;
 	}
 	p->mark = resmark;
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -1728,7 +1798,7 @@ expr_type rule_factor(Parser* p)
 	expr_type result = NULL;
 	if (CrGen_IsMemoized(p, type_factor, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -1736,7 +1806,7 @@ expr_type rule_factor(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -1745,7 +1815,7 @@ expr_type rule_factor(Parser* p)
 	{ // '+' factor
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("factor", "'+' factor");
@@ -1761,7 +1831,7 @@ expr_type rule_factor(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -1770,7 +1840,7 @@ expr_type rule_factor(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -1781,7 +1851,7 @@ expr_type rule_factor(Parser* p)
 	{ // '-' factor
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("factor", "'-' factor");
@@ -1797,7 +1867,7 @@ expr_type rule_factor(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -1806,7 +1876,7 @@ expr_type rule_factor(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -1817,7 +1887,7 @@ expr_type rule_factor(Parser* p)
 	{ // '~' factor
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("factor", "'~' factor");
@@ -1833,7 +1903,7 @@ expr_type rule_factor(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -1842,7 +1912,7 @@ expr_type rule_factor(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -1853,7 +1923,7 @@ expr_type rule_factor(Parser* p)
 	{ // power
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("factor", "power");
@@ -1872,7 +1942,7 @@ expr_type rule_factor(Parser* p)
 	result = NULL;
 done:
 	CrGen_Memo_Insert(p, mark, type_factor, result);
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -1886,7 +1956,7 @@ static expr_type rule_power(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -1895,7 +1965,7 @@ static expr_type rule_power(Parser* p)
 	{ // await_primary '**' factor 
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("power", "await_primary '**' factor");
@@ -1914,7 +1984,7 @@ static expr_type rule_power(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -1923,7 +1993,7 @@ static expr_type rule_power(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -1934,7 +2004,7 @@ static expr_type rule_power(Parser* p)
 	{ // await_primary
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("power", "await_primary");
@@ -1952,7 +2022,7 @@ static expr_type rule_power(Parser* p)
 	}
 	result = NULL;
 done:
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -1964,7 +2034,7 @@ static expr_type rule_await_primary(Parser* p)
 	expr_type result = NULL;
 	if (CrGen_IsMemoized(p, type_await_primary, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -1972,7 +2042,7 @@ static expr_type rule_await_primary(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -1981,7 +2051,7 @@ static expr_type rule_await_primary(Parser* p)
 	{ // primary
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("await_primary", "primary");
@@ -2000,7 +2070,7 @@ static expr_type rule_await_primary(Parser* p)
 	result = NULL;
 done:
 	CrGen_Memo_Insert(p, mark, type_await_primary, result);
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -2021,7 +2091,7 @@ static expr_type raw_primary(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -2030,7 +2100,7 @@ static expr_type raw_primary(Parser* p)
 	{ // atom
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("primary", "atom");
@@ -2048,7 +2118,7 @@ static expr_type raw_primary(Parser* p)
 	}
 	result = NULL;
 done:
-	D(p->level--);
+	p->level--;
 	return result;
 }
 static expr_type rule_primary(Parser* p)
@@ -2057,7 +2127,7 @@ static expr_type rule_primary(Parser* p)
 	expr_type result = NULL;
 	if (CrGen_IsMemoized(p, type_primary, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 	int mark = p->mark;
@@ -2067,7 +2137,7 @@ static expr_type rule_primary(Parser* p)
 		int tmpvar = CrGen_Memo_Update(p, mark, type_primary, result);
 		if (tmpvar)
 		{
-			D(p->level--);
+			p->level--;
 			return result;
 		}
 		p->mark = mark;
@@ -2080,7 +2150,7 @@ static expr_type rule_primary(Parser* p)
 		result = (expr_type)raw;
 	}
 	p->mark = resmark;
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -2104,16 +2174,35 @@ static expr_type rule_atom(Parser* p)
 	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
 	{
 		p->error_indicator = 1;
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
 	int start_lineno = p->tokens[mark]->lineno;
 	int start_col_offset = p->tokens[mark]->col_offset;
+	{ // NAME
+		if (p->error_indicator)
+		{
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("atom", "NAME");
+		expr_type name_var;
+		if (
+			(name_var = CrGen_NameToken(p)) // NAME
+			)
+		{
+			CrParser_PrintSuccess("atom", "NAME");
+			result = name_var;
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("atom", "NAME");
+	}
 	{ // 'True'
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("atom", "'True'");
@@ -2126,7 +2215,7 @@ static expr_type rule_atom(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -2135,7 +2224,7 @@ static expr_type rule_atom(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -2146,7 +2235,7 @@ static expr_type rule_atom(Parser* p)
 	{ // 'False'
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("atom", "'False'");
@@ -2159,7 +2248,7 @@ static expr_type rule_atom(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -2168,7 +2257,7 @@ static expr_type rule_atom(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -2179,7 +2268,7 @@ static expr_type rule_atom(Parser* p)
 	{ // 'Null'
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("atom", "'Null'");
@@ -2192,7 +2281,7 @@ static expr_type rule_atom(Parser* p)
 			Token* token = CrGen_GetLastNonWhitespaceToken(p);
 			if (token == NULL)
 			{
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			int end_lineno = token->end_lineno;
@@ -2201,7 +2290,7 @@ static expr_type rule_atom(Parser* p)
 			if (result == NULL && CrError_Occurred())
 			{
 				p->error_indicator = 1;
-				D(p->level--);
+				p->level--;
 				return NULL;
 			}
 			goto done;
@@ -2212,7 +2301,7 @@ static expr_type rule_atom(Parser* p)
 	{ // &STRING strings
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("atom", "&STRING strings");
@@ -2233,7 +2322,7 @@ static expr_type rule_atom(Parser* p)
 	{ // NUMBER
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("atom", "NUMBER");
@@ -2251,7 +2340,7 @@ static expr_type rule_atom(Parser* p)
 	}
 	result = NULL;
 done:
-	D(p->level--);
+	p->level--;
 	return result;
 }
 
@@ -2263,7 +2352,7 @@ expr_type rule_strings(Parser* p)
 	expr_type result = NULL;
 	if (CrGen_IsMemoized(p, type_strings, &result))
 	{
-		D(p->level--);
+		p->level--;
 		return result;
 	}
 
@@ -2271,7 +2360,7 @@ expr_type rule_strings(Parser* p)
 	{ // STRING+
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("strings", "STRING+");
@@ -2289,7 +2378,313 @@ expr_type rule_strings(Parser* p)
 	result = NULL;
 done:
 	CrGen_Memo_Insert(p, mark, type_strings, result);
-	D(p->level--);
+	p->level--;
+	return result;
+}
+
+// star_targets: star_target !',' | star_target ((',' star_target))* ','?
+expr_type rule_star_targets(Parser* p)
+{
+	RULE_HEAD();
+
+	expr_type result = NULL;
+	int mark = p->mark;
+	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
+	{
+		p->error_indicator = 1;
+		p->level--;
+		return result;
+	}
+
+	int start_lineno = p->tokens[mark]->lineno;
+	int start_col_offset = p->tokens[mark]->col_offset;
+	{ // star_target !','
+		if (p->error_indicator)
+		{
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("star_targets", "star_target !','");
+		expr_type target;
+		if (
+			(target = rule_star_target(p)) // star_target
+			&&
+			(CrGen_LookaheadWithInt(0, CrGen_ExpectToken, p, TOK_COMMA)) // token = ','
+			)
+		{
+			CrParser_PrintSuccess("star_targets", "star_target !','");
+			result = target;
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("star_targets", "star_target !','");
+	}
+	result = NULL;
+done:
+	p->level--;
+	return result;
+}
+
+// star_target: '*' (!'*' star_target) | target_with_star_atom
+expr_type rule_star_target(Parser* p)
+{
+	RULE_HEAD();
+
+	expr_type result = NULL;
+	if (CrGen_IsMemoized(p, type_star_target, &result))
+	{
+		p->level--;
+		return result;
+	}
+	int mark = p->mark;
+	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
+	{
+		p->error_indicator = 1;
+		p->level--;
+		return result;
+	}
+
+	int start_lineno = p->tokens[mark]->lineno;
+	int start_col_offset = p->tokens[mark]->col_offset;
+	{ // target_with_star_atom
+		if (p->error_indicator)
+		{
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("star_target", "target_with_star_atom");
+		expr_type target;
+		if (
+			(target = rule_target_with_star_atom(p)) // target_with_star_atom
+			)
+		{
+			CrParser_PrintSuccess("star_target", "target_with_star_atom");
+			result = target;
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("star_target", "target_with_star_atom");
+	}
+	result = NULL;
+done:
+	CrGen_Memo_Insert(p, mark, type_star_target, result);
+	p->level--;
+	return result;
+}
+
+// target_with_star_atom:
+//     | t_primary '.' NAME !t_lookahead
+//     | t_primary '[' slices ']' !t_lookahead
+//     | star_atom
+expr_type rule_target_with_star_atom(Parser* p)
+{
+	RULE_HEAD();
+
+	expr_type result = NULL;
+	if (CrGen_IsMemoized(p, type_target_with_star_atom, &result))
+	{
+		p->level--;
+		return result;
+	}
+	int mark = p->mark;
+	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
+	{
+		p->error_indicator = 1;
+		p->level--;
+		return result;
+	}
+
+	int start_lineno = p->tokens[mark]->lineno;
+	int start_col_offset = p->tokens[mark]->col_offset;
+	{ // star_atom
+		if (p->error_indicator)
+		{
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("target_with_star_atom", "star_atom");
+		expr_type target;
+		if (
+			(target = rule_star_atom(p)) // star_atom
+			)
+		{
+			CrParser_PrintSuccess("target_with_star_atom", "star_atom");
+			result = target;
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("target_with_star_atom", "star_atom");
+	}
+	result = NULL;
+done:
+	CrGen_Memo_Insert(p, mark, type_target_with_star_atom, result);
+	p->level--;
+	return result;
+}
+
+// star_atom:
+//     | NAME
+//     | '(' target_with_star_atom ')'
+//     | '(' star_targets_tuple_seq? ')'
+//     | '[' star_targets_list_seq? ']'
+expr_type rule_star_atom(Parser* p)
+{
+	RULE_HEAD();
+
+	expr_type result = NULL;
+	int mark = p->mark;
+	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
+	{
+		p->error_indicator = 1;
+		p->level--;
+		return result;
+	}
+
+	int start_lineno = p->tokens[mark]->lineno;
+	int start_col_offset = p->tokens[mark]->col_offset;
+	{ // NAME
+		if (p->error_indicator)
+		{
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("star_atom", "NAME");
+		expr_type name;
+		if (
+			(name = CrGen_NameToken(p)) // NAME
+			)
+		{
+			CrParser_PrintSuccess("star_atom", "NAME");
+			result = name;
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("star_atom", "NAME");
+	}
+	result = NULL;
+done:
+	p->level--;
+	return result;
+}
+
+// yield_expr: 'yield' 'from' expression | 'yield' star_expressions?
+expr_type rule_yield_expr(Parser* p)
+{
+	RULE_HEAD();
+
+	expr_type result = NULL;
+	int mark = p->mark;
+	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
+	{
+		p->error_indicator = 1;
+		p->level--;
+		return result;
+	}
+
+	int start_lineno = p->tokens[mark]->lineno;
+	int start_col_offset = p->tokens[mark]->col_offset;
+	{ // 'yield' 'from' expression
+		if (p->error_indicator)
+		{
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("yield_expr", "'yield' 'from' expression");
+		Token* literal;
+		Token* literal_1;
+		expr_type expr;
+		if (
+			(literal = CrGen_ExpectToken(p, TOK_YIELD)) // token = 'yield'
+			&&
+			(literal_1 = CrGen_ExpectToken(p, TOK_FROM)) // token = 'from'
+			&&
+			(expr = rule_expression(p)) // expression
+			)
+		{
+			CrParser_PrintSuccess("yield_expr", "'yield' 'from' expression");
+			Token* token = CrGen_GetLastNonWhitespaceToken(p);
+			if (token == NULL)
+			{
+				p->level--;
+				return NULL;
+			}
+			int end_lineno = token->end_lineno;
+			int end_col_offset = token->end_col_offset;
+			result = CrAST_YieldFrom(expr, EXTRA);
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("yield_expr", "'yield' 'from' expression");
+	}
+	{ // 'yield' star_expressions?
+		if (p->error_indicator)
+		{
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("yield_expr", "'yield' star_expressions?");
+		Token* literal;
+		expr_type expr;
+		if (
+			(literal = CrGen_ExpectToken(p, TOK_YIELD)) // token = 'yield'
+			&&
+			(expr = rule_star_expressions(p), !p->error_indicator) // expression
+			)
+		{
+			CrParser_PrintSuccess("yield_expr", "'yield' star_expressions?");
+			Token* token = CrGen_GetLastNonWhitespaceToken(p);
+			if (token == NULL)
+			{
+				p->level--;
+				return NULL;
+			}
+			int end_lineno = token->end_lineno;
+			int end_col_offset = token->end_col_offset;
+			result = CrAST_Yield(expr, EXTRA);
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("yield_expr", "'yield' star_expressions?");
+	}
+	result = NULL;
+done:
+	p->level--;
 	return result;
 }
 
@@ -2306,7 +2701,7 @@ ast_seq* rule_loop_string(Parser* p)
 	{
 		p->error_indicator = 1;
 		CrError_NoMemory();
-		D(p->level--);
+		p->level--;
 		return NULL;
 	}
 	size_t children_capacity = 1;
@@ -2314,7 +2709,7 @@ ast_seq* rule_loop_string(Parser* p)
 	{ // STRING
 		if (p->error_indicator)
 		{
-			D(p->level--);
+			p->level--;
 			return NULL;
 		}
 		CrParser_PrintTest("loop_string", "STRING");
@@ -2332,7 +2727,7 @@ ast_seq* rule_loop_string(Parser* p)
 				{
 					p->error_indicator = 1;
 					CrError_NoMemory();
-					D(p->level--);
+					p->level--;
 					return NULL;
 				}
 				children = new_children;
@@ -2346,7 +2741,7 @@ ast_seq* rule_loop_string(Parser* p)
 	if (n == 0 || p->error_indicator)
 	{
 		Mem_Free(children);
-		D(p->level--);
+		p->level--;
 		return NULL;
 	}
 	ast_seq* seq = (ast_seq*)CrAST_NewGenericSeq(n, p->arena);
@@ -2355,15 +2750,189 @@ ast_seq* rule_loop_string(Parser* p)
 		Mem_Free(children);
 		p->error_indicator = 1;
 		CrError_NoMemory();
-		D(p->level--);
+		p->level--;
 		return NULL;
 	}
 	for (int i = 0; i < n; i++)
 		CrAST_SEQ_SET_UNTYPED(seq, i, children[i]);
 	Mem_Free(children);
 	CrGen_Memo_Insert(p, start_mark, type_loop_strings, seq);
-	D(p->level--);
+	p->level--;
 	return seq;
+}
+
+// looprule_14: (star_targets '=')
+ast_seq* looprule_14(Parser* p)
+{
+	RULE_HEAD();
+
+	void* result = NULL;
+	int mark = p->mark;
+	int start_mark = p->mark;
+	void** children = (void**)Mem_Alloc(sizeof(void*));
+	if (!children)
+	{
+		p->error_indicator = 1;
+		CrError_NoMemory();
+		p->level--;
+		return NULL;
+	}
+	size_t children_capacity = 1;
+	size_t n = 0;
+	{ // (star_targets '=')
+		if (p->error_indicator)
+		{
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("looprule_14", "(star_targets '=')");
+		void* gatherrule_219_var;
+		while (
+			(gatherrule_219_var = gatherrule_219(p)) // (star_targets '=')
+			)
+		{
+			result = gatherrule_219_var;
+			if (n == children_capacity)
+			{
+				children_capacity *= 2;
+				void** new_children = (void**)Mem_Realloc(children, children_capacity * sizeof(void*));
+				if (!new_children)
+				{
+					p->error_indicator = 1;
+					CrError_NoMemory();
+					p->level--;
+					return NULL;
+				}
+				children = new_children;
+			}
+			children[n++] = result;
+			mark = p->mark;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("looprule_14", "(star_targets '=')");
+	}
+	if (n == 0 || p->error_indicator)
+	{
+		Mem_Free(children);
+		p->level--;
+		return NULL;
+	}
+	ast_seq* seq = (ast_seq*)CrAST_NewGenericSeq(n, p->arena);
+	if (!seq)
+	{
+		Mem_Free(children);
+		p->error_indicator = 1;
+		CrError_NoMemory();
+		p->level--;
+		return NULL;
+	}
+	for (int i = 0; i < n; i++)
+		CrAST_SEQ_SET_UNTYPED(seq, i, children[i]);
+	Mem_Free(children);
+	CrGen_Memo_Insert(p, start_mark, type_looprule_14, seq);
+	p->level--;
+	return seq;
+}
+
+// gatherrule_15: yield_expr | star_expressions
+void* gatherrule_15(Parser* p)
+{
+	RULE_HEAD();
+
+	void* result = NULL;
+	int mark = p->mark;
+	{ // yield_expr
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("gatherrule_15", "yield_expr");
+		expr_type yield_expr_var;
+		if (
+			(yield_expr_var = rule_yield_expr(p)) // yield_expr
+			)
+		{
+			CrParser_PrintSuccess("gatherrule_15", "yield_expr");
+			result = yield_expr_var;
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("gatherrule_15", "yield_expr");
+	}
+	{ // star_expressions
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("gatherrule_15", "star_expressions");
+		expr_type star_expressions_var;
+		if (
+			(star_expressions_var = rule_star_expressions(p)) // star_expressions
+			)
+		{
+			CrParser_PrintSuccess("gatherrule_15", "star_expressions");
+			result = star_expressions_var;
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("gatherrule_15", "star_expressions");
+	}
+	result = NULL;
+done:
+	p->level--;
+	return result;
+}
+
+// gatherrule_219: star_targets '='
+void* gatherrule_219(Parser* p)
+{
+	RULE_HEAD();
+
+	void* result = NULL;
+	int mark = p->mark;
+	{ // star_targets '='
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("gatherrule_219", "star_targets '='");
+		expr_type target;
+		Token* literal;
+		if (
+			(target = rule_star_targets(p)) // star_targets
+			&&
+			(literal = CrGen_ExpectToken(p, TOK_EQUAL)) // token = '='
+			)
+		{
+			CrParser_PrintSuccess("gatherrule_219", "star_targets '='");
+			result = target;
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("gatherrule_219", "star_targets '='");
+	}
+	result = NULL;
+done:
+	p->level--;
+	return result;
 }
 
 //

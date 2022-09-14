@@ -7,6 +7,19 @@
 
 #include <objects/object.h>
 
+/* AST node pairs */
+
+typedef struct _cmpopexprpair {
+	cmpop_type cmpop;
+	expr_type expr;
+} CmpopExprPair;
+
+/* AST node pair functions */
+
+CmpopExprPair* CrGen_CmpopExprPair(Parser* p, cmpop_type cmpop, expr_type expr);
+ast_int_seq* CrGen_GetCmpops(Parser* p, ast_seq* seq);
+ast_expr_seq* CrGen_GetExprs(Parser* p, ast_seq* seq);
+
 /* Memoization functions */
 
 void CrGen_Memo_ClearStats();
@@ -23,6 +36,7 @@ int CrGen_Memo_Update(Parser* p, int mark, int type, void* node);
 
 int CrGen_FillToken(Parser* p);
 Token* CrGen_ExpectToken(Parser* p, int type);
+Token* CrGen_ExpectForcedToken(Parser* p, int type);
 int CrGen_LookaheadWithInt(int positive, Token* (func)(Parser*, int), Parser* p, int arg);
 int CrGen_Lookahead(int positive, void* (func)(Parser*), Parser* p);
 Token* CrGen_GetLastNonWhitespaceToken(Parser* p);
@@ -34,6 +48,10 @@ expr_type CrGen_NameToken(Parser* p);
 /* AST Functions */
 
 ast_seq* CrGen_SingletonSeq(Parser* p, void* a);
+ast_seq* CrGen_SeqFlatten(Parser* p, ast_seq* seqs);
+
+// Creates an `expr_ty` equivalent to `expr` but with `ctx` as context
+expr_type CrGen_SetExprContext(Parser* p, expr_type expr, expr_context_type ctx);
 
 ast_stmt_seq* CrGen_InteractiveExit(Parser* p);
 

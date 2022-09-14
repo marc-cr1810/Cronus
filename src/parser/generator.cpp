@@ -7,6 +7,53 @@
 #include <objects/listobject.h>
 #include <objects/floatobject.h>
 
+#define EXTRA_EXPR(head, tail) head->lineno, (head)->col_offset, (tail)->end_lineno, (tail)->end_col_offset, p->arena
+
+/* AST node pair functions */
+
+CmpopExprPair* CrGen_CmpopExprPair(Parser* p, cmpop_type cmpop, expr_type expr)
+{
+	assert(expr != NULL);
+	CmpopExprPair* cmpopexprpair = (CmpopExprPair*)CrArena_Alloc(p->arena, sizeof(CmpopExprPair));
+	if (!cmpopexprpair)
+		return NULL;
+	cmpopexprpair->cmpop = cmpop;
+	cmpopexprpair->expr = expr;
+	return cmpopexprpair;
+}
+
+ast_int_seq* CrGen_GetCmpops(Parser* p, ast_seq* seq)
+{
+	Cr_size_t len = CrAST_SEQ_LENGTH(seq);
+	assert(len > 0);
+
+	ast_int_seq* new_seq = CrAST_NewIntSeq(len, p->arena);
+	if (!new_seq)
+		return NULL;
+	for (Cr_size_t i = 0; i < len; i++)
+	{
+		CmpopExprPair* pair = (CmpopExprPair*)CrAST_SEQ_GET_UNTYPED(seq, i);
+		CrAST_SEQ_SET(new_seq, i, pair->cmpop);
+	}
+	return new_seq;
+}
+
+ast_expr_seq* CrGen_GetExprs(Parser* p, ast_seq* seq)
+{
+	Cr_size_t len = CrAST_SEQ_LENGTH(seq);
+	assert(len > 0);
+
+	ast_expr_seq* new_seq = CrAST_NewExprSeq(len, p->arena);
+	if (!new_seq)
+		return NULL;
+	for (Cr_size_t i = 0; i < len; i++)
+	{
+		CmpopExprPair* pair = (CmpopExprPair*)CrAST_SEQ_GET_UNTYPED(seq, i);
+		CrAST_SEQ_SET(new_seq, i, pair->expr);
+	}
+	return new_seq;
+}
+
 /* Memoization functions */
 
 /*	
@@ -309,6 +356,30 @@ Token* CrGen_ExpectToken(Parser* p, int type)
 	return t;
 }
 
+Token* CrGen_ExpectForcedToken(Parser* p, int type)
+{
+	if (p->error_indicator == 1)
+		return NULL;
+
+	if (p->mark == p->fill)
+	{
+		if (CrGen_FillToken(p) < 0)
+		{
+			p->error_indicator = 1;
+			return NULL;
+		}
+	}
+
+	Token* t = p->tokens[p->mark];
+	if (t->type != type)
+	{
+		CrError_SetString(CrExc_SyntaxError, "expected ':'");
+		return NULL;
+	}
+	p->mark += 1;
+	return t;
+}
+
 int CrGen_LookaheadWithInt(int positive, Token* (func)(Parser*, int), Parser* p, int arg)
 {
 	int mark = p->mark;
@@ -478,6 +549,119 @@ ast_seq* CrGen_SingletonSeq(Parser* p, void* a)
 		return NULL;
 	CrAST_SEQ_SET_UNTYPED(seq, 0, a);
 	return seq;
+}
+
+static Cr_size_t CrGen_GetFlattenedSeqSize(ast_seq* seqs)
+{
+	Cr_size_t size = 0;
+	for (Cr_size_t i = 0, l = CrAST_SEQ_LENGTH(seqs); i < l; i++)
+	{
+		ast_seq* inner_seq = (ast_seq*)CrAST_SEQ_GET_UNTYPED(seqs, i);
+		size += CrAST_SEQ_LENGTH(inner_seq);
+	}
+	return size;
+}
+
+ast_seq* CrGen_SeqFlatten(Parser* p, ast_seq* seqs)
+{
+	Cr_size_t flattened_seq_size = CrGen_GetFlattenedSeqSize(seqs);
+	assert(flattened_seq_size > 0);
+
+	ast_seq* flattened_seq = (ast_seq*)CrAST_NewGenericSeq(flattened_seq_size, p->arena);
+	if (!flattened_seq)
+		return NULL;
+
+	int flattened_seq_idx = 0;
+	for (Cr_size_t i = 0, l = CrAST_SEQ_LENGTH(seqs); i < l; i++)
+	{
+		ast_seq* inner_seq = (ast_seq*)CrAST_SEQ_GET_UNTYPED(seqs, i);
+		for (Cr_size_t j = 0, li = CrAST_SEQ_LENGTH(inner_seq); j < li; j++)
+		{
+			CrAST_SEQ_SET_UNTYPED(flattened_seq, flattened_seq_idx++, CrAST_SEQ_GET_UNTYPED(inner_seq, j));
+		}
+	}
+	assert(flattened_seq_idx == flattened_seq_size);
+	return flattened_seq;
+}
+
+// Creates an ast_seq* where all the elements have been changed to have ctx as context
+static ast_expr_seq* CrGen_SetSeqContext(Parser* p, ast_expr_seq* seq, expr_context_type ctx)
+{
+	Cr_size_t len = CrAST_SEQ_LENGTH(seq);
+	if (len == 0)
+		return NULL;
+
+	ast_expr_seq* new_seq = CrAST_NewExprSeq(len, p->arena);
+	if (!new_seq)
+		return NULL;
+
+	for (Cr_size_t i = 0; i < len; i++)
+	{
+		expr_type expr = CrAST_SEQ_GET(seq, i);
+		CrAST_SEQ_SET(new_seq, i, CrGen_SetExprContext(p, expr, ctx));
+	}
+	return new_seq;
+}
+
+static expr_type CrGen_SetNameContext(Parser* p, expr_type expr, expr_context_type ctx)
+{
+	return CrAST_Name(expr->v.Name.id, ctx, EXTRA_EXPR(expr, expr));
+}
+
+static expr_type CrGen_SetTupleContext(Parser* p, expr_type expr, expr_context_type ctx)
+{
+	return CrAST_Tuple(CrGen_SetSeqContext(p, expr->v.Tuple.elts, ctx), ctx, EXTRA_EXPR(expr, expr));
+}
+
+static expr_type CrGen_SetListContext(Parser* p, expr_type expr, expr_context_type ctx)
+{
+	return CrAST_List(CrGen_SetSeqContext(p, expr->v.Tuple.elts, ctx), ctx, EXTRA_EXPR(expr, expr));
+}
+
+static expr_type CrGen_SetSubscriptContext(Parser* p, expr_type expr, expr_context_type ctx)
+{
+	return CrAST_Subscript(expr->v.Subscript.value, expr->v.Subscript.slice, ctx, EXTRA_EXPR(expr, expr));
+}
+
+static expr_type CrGen_SetAttributeContext(Parser* p, expr_type expr, expr_context_type ctx)
+{
+	return CrAST_Attribute(expr->v.Attribute.value, expr->v.Attribute.attr, ctx, EXTRA_EXPR(expr, expr));
+}
+
+static expr_type CrGen_SetStarredContext(Parser* p, expr_type expr, expr_context_type ctx)
+{
+	return CrAST_Starred(CrGen_SetExprContext(p, expr->v.Starred.value, ctx), ctx, EXTRA_EXPR(expr, expr));
+}
+
+expr_type CrGen_SetExprContext(Parser* p, expr_type expr, expr_context_type ctx)
+{
+	assert(expr != NULL);
+
+	expr_type new_expr = NULL;
+	switch (expr->kind)
+	{
+	case expr_kind::Name_kind:
+		new_expr = CrGen_SetNameContext(p, expr, ctx);
+		break;
+	case expr_kind::Tuple_kind:
+		new_expr = CrGen_SetTupleContext(p, expr, ctx);
+		break;
+	case expr_kind::List_kind:
+		new_expr = CrGen_SetListContext(p, expr, ctx);
+		break;
+	case expr_kind::Subscript_kind:
+		new_expr = CrGen_SetSubscriptContext(p, expr, ctx);
+		break;
+	case expr_kind::Attribute_kind:
+		new_expr = CrGen_SetAttributeContext(p, expr, ctx);
+		break;
+	case expr_kind::Starred_kind:
+		new_expr = CrGen_SetStarredContext(p, expr, ctx);
+		break;
+	default:
+		new_expr = expr;
+	}
+	return new_expr;
 }
 
 ast_stmt_seq* CrGen_InteractiveExit(Parser* p)

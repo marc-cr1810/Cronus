@@ -107,7 +107,7 @@ ast_int_seq* CrAST_NewIntSeq(Cr_size_t size, CrArena* arena);
 		Cr_size_t ast_i = (i); \
 		assert((s) != NULL); \
 		assert(0 <= ast_i && ast_i < (s)->size); \
-		(s)->elements[i] = (v); \
+		(s)->elements[ast_i] = (v); \
 	} while(0)
 #else
 #define CrAST_SEQ_SET_UNTYPED(s, i, v) (s)->elements[i] = (v)
@@ -116,10 +116,10 @@ ast_int_seq* CrAST_NewIntSeq(Cr_size_t size, CrArena* arena);
 #ifdef Cr_DEBUG
 #define CrAST_SEQ_SET(s, i, v) \
 	do { \
-		Cr_size_t ast_i = (i) \
+		Cr_size_t ast_i = (i); \
 		assert((s) != NULL); \
-		assert(0 <= ast_i && ast_i < (s)->size) \
-		(s)->typed_elements[i] = (v); \
+		assert(0 <= ast_i && ast_i < (s)->size); \
+		(s)->typed_elements[ast_i] = (v); \
 	} while(0)
 #else
 #define CrAST_SEQ_SET(s, i, v) (s)->typed_elements[i] = (v)
@@ -142,6 +142,7 @@ typedef struct
 	AST_SEQ_HEAD;
 	expr_type typed_elements[1];
 } ast_expr_seq;
+ast_expr_seq* CrAST_NewExprSeq(Cr_size_t size, CrArena* arena);
 
 typedef struct {
 	AST_SEQ_HEAD;

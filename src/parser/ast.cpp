@@ -9,8 +9,7 @@ ast_generic_seq* CrAST_NewGenericSeq(Cr_size_t size, CrArena* arena)
 	size_t n = 0;
 
 	// Check size is ok
-	if (size < 0 ||
-		(size && (((size_t)size - 1) > (SIZE_MAX / sizeof(void*)))))
+	if (size < 0 || (size && (((size_t)size - 1) > (SIZE_MAX / sizeof(void*)))))
 	{
 		CrError_NoMemory();
 		return NULL;
@@ -34,8 +33,7 @@ ast_identifier_seq* CrAST_NewIdentifierSeq(Cr_size_t size, CrArena* arena)
 	size_t n = 0;
 
 	// Check size is ok
-	if (size < 0 ||
-		(size && (((size_t)size - 1) > (SIZE_MAX / sizeof(void*)))))
+	if (size < 0 || (size && (((size_t)size - 1) > (SIZE_MAX / sizeof(void*)))))
 	{
 		CrError_NoMemory();
 		return NULL;
@@ -59,14 +57,37 @@ ast_int_seq* CrAST_NewIntSeq(Cr_size_t size, CrArena* arena)
 	size_t n = 0;
 
 	// Check size is ok
-	if (size < 0 ||
-		(size && (((size_t)size - 1) > (SIZE_MAX / sizeof(void*)))))
+	if (size < 0 || (size && (((size_t)size - 1) > (SIZE_MAX / sizeof(void*)))))
 	{
 		CrError_NoMemory();
 		return NULL;
 	}
 	n += sizeof(ast_int_seq);
 	seq = (ast_int_seq*)CrArena_Alloc(arena, n);
+	if (!seq)
+	{
+		CrError_NoMemory();
+		return NULL;
+	}
+	memset(seq, 0, n);
+	seq->size = size;
+	seq->elements = (void**)seq->typed_elements;
+	return seq;
+}
+
+ast_expr_seq* CrAST_NewExprSeq(Cr_size_t size, CrArena* arena)
+{
+	ast_expr_seq* seq = NULL;
+	size_t n = 0;
+
+	// Check size is ok
+	if (size < 0 || (size && (((size_t)size - 1) > (SIZE_MAX / sizeof(void*)))))
+	{
+		CrError_NoMemory();
+		return NULL;
+	}
+	n += sizeof(ast_expr_seq);
+	seq = (ast_expr_seq*)CrArena_Alloc(arena, n);
 	if (!seq)
 	{
 		CrError_NoMemory();
@@ -1551,5 +1572,3 @@ type_ignore_type CrAST_TypeIgnore(int lineno, string tag, CrArena* arena)
 	type_ignore->v.TypeIgnore.tag = tag;
 	return type_ignore;
 }
-
-

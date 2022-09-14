@@ -98,6 +98,13 @@ token_type CrToken_TwoChars(char c1, char c2)
 			return TOK_FSLASHEQUAL;
 		}
 		break;
+	case '=':
+		switch (c2)
+		{
+		case '=':
+			return TOK_EQUALEQUAL;
+		}
+		break;
 	case '!':
 		switch (c2)
 		{
@@ -130,6 +137,13 @@ token_type CrToken_TwoChars(char c1, char c2)
 		{
 		case '.':
 			return TOK_ELLIPSIS;
+		}
+		break;
+	case ':':
+		switch (c2)
+		{
+		case '=':
+			return TOK_COLONEQUAL;
 		}
 		break;
 	}

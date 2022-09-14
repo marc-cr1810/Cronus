@@ -12,7 +12,7 @@ static void int_dealloc(CrIntObject* self)
 CrTypeObject CrIntType = {
 	VAROBJECT_HEAD_INIT(&CrIntType, 0)		// base
 	"int",									// tp_name
-	"Interger object type",					// tp_doc
+	"Integer object type",					// tp_doc
 	sizeof(CrIntObject),					// tp_size
 	0,										// tp_itemsize
 	TPFLAGS_DEFAULT | TPFLAGS_BASETYPE,		// tp_flags

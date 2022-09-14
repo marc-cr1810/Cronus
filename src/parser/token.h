@@ -15,7 +15,9 @@ enum token_type
 	/* Keyword tokens */
 	TOK_IF,				// if
 	TOK_DO,				// do
+	TOK_IS,				// is
 	TOK_FOR,			// for
+	TOK_NOT,			// not
 	TOK_ELSE,			// else
 	TOK_FUNC,			// func
 	TOK_NULL,			// Null
@@ -57,6 +59,7 @@ enum token_type
 	TOK_RBRACE,			// }
 
 	/* Double char operator tokens */
+	TOK_EQUALEQUAL,		// ==
 	TOK_NOTEQUAL,		// "!=", <>
 	TOK_ADDEQUAL,		// +=
 	TOK_MINUSEQUAL,		// -=
@@ -71,6 +74,7 @@ enum token_type
 	TOK_DOUBLEFSLASH,	// //
 	TOK_LEFTSHIFT,		// <<
 	TOK_RIGHTSHIFT,		// >>
+	TOK_COLONEQUAL,		// :=
 
 	/* Miscellaneous tokens */
 	TOK_INDENT,

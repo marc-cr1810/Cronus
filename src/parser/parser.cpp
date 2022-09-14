@@ -49,10 +49,12 @@ static KeywordToken keywords[][KEYWORDS_MAX] = {
 	{ // 2
 		{"if", TOK_IF},
 		{"do", TOK_DO},
+		{"is", TOK_IS},
 		{NULL, TOK_UNKNOWN}
 	},
 	{ // 3
 		{"for", TOK_FOR},
+		{"not", TOK_NOT},
 		{NULL, TOK_UNKNOWN}},
 	{ // 4
 		{"else", TOK_ELSE},
@@ -129,6 +131,19 @@ static KeywordToken keywords[][KEYWORDS_MAX] = {
 #define type_star_atom 1033
 #define type_gatherrule_15 1034
 #define type_yield_expr 1035
+#define type_compound_stmt 1036
+#define type_if_stmt 1037
+#define type_named_expression 1038
+#define type_assignment_expression 1039
+#define type_block 1040
+#define type_statements 1041
+#define type_looprule_3 1042
+#define type_statement 1043
+#define type_else_block 1044
+#define type_looprule_86 1045
+#define type_compare_op_bitwise_or_pair 1046
+#define type_eq_bitwise_or 1047
+#define type_noteq_bitwise_or 1048
 
 // Forward declarations
 /*
@@ -147,7 +162,9 @@ static ast_stmt_seq* rule_statement_newline(Parser* p);
 static ast_stmt_seq* rule_simple_statements(Parser* p);
 
 static stmt_type rule_simple_statement(Parser* p);
+static stmt_type rule_compound_stmt(Parser* p);
 static stmt_type rule_assignment(Parser* p);
+static stmt_type rule_if_stmt(Parser* p);
 static expr_type rule_star_expressions(Parser* p);
 static expr_type rule_star_expression(Parser* p);
 static expr_type rule_expression(Parser* p);
@@ -173,9 +190,20 @@ static expr_type rule_star_target(Parser* p);
 static expr_type rule_target_with_star_atom(Parser* p);
 static expr_type rule_star_atom(Parser* p);
 static expr_type rule_yield_expr(Parser* p);
+static expr_type rule_named_expression(Parser* p);
+static expr_type rule_assignment_expression(Parser* p);
+static ast_stmt_seq* rule_block(Parser* p);
+static ast_stmt_seq* rule_statements(Parser* p);
+static ast_stmt_seq* rule_statement(Parser* p);
+static ast_stmt_seq* rule_else_block(Parser* p);
+static CmpopExprPair* rule_compare_op_bitwise_or_pair(Parser* p);
+static CmpopExprPair* rule_eq_bitwise_or(Parser* p);
+static CmpopExprPair* rule_noteq_bitwise_or(Parser* p);
 
 // Loops, gathers, etc
+static ast_seq* looprule_3(Parser* p);
 static ast_seq* looprule_14(Parser* p);
+static ast_seq* looprule_86(Parser* p);
 
 static void* gatherrule_15(Parser* p);
 static void* gatherrule_219(Parser* p);
@@ -261,7 +289,34 @@ static ast_stmt_seq* rule_statement_newline(Parser* p)
 	int start_lineno = p->tokens[mark]->lineno;
 	int start_col_offset = p->tokens[mark]->col_offset;
 
-
+	{ // compound_stmt NEWLINE
+		if (p->error_indicator)
+		{
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("statement_newline", "compound_stmt NEWLINE");
+		stmt_type compound_stmt_var;
+		Token* newline_var;
+		if (
+			(compound_stmt_var = rule_compound_stmt(p)) // compound_stmt
+			&&
+			(newline_var = CrGen_ExpectToken(p, TOK_NEWLINE)) // token = 'NEWLINE'
+			)
+		{
+			CrParser_PrintSuccess("statement_newline", "compound_stmt NEWLINE");
+			result = (ast_stmt_seq*)CrGen_SingletonSeq(p, compound_stmt_var);
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("statement_newline", "compound_stmt NEWLINE");
+	}
 	{ // simple_statements
 		if (p->error_indicator)
 		{
@@ -276,6 +331,12 @@ static ast_stmt_seq* rule_statement_newline(Parser* p)
 		{
 			CrParser_PrintSuccess("statement_newline", "simple_statements");
 			result = simple_stmts_var;
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
 			goto done;
 		}
 		p->mark = mark;
@@ -478,6 +539,46 @@ done:
 	return result;
 }
 
+// compound_stmt:
+//     | &('def' | '@' | ASYNC) function_def
+//     | &'if' if_stmt
+//     | &('class' | '@') class_def
+//     | &('with' | ASYNC) with_stmt
+//     | &('for' | ASYNC) for_stmt
+//     | &'try' try_stmt
+//     | &'while' while_stmt
+//     | match_stmt
+stmt_type rule_compound_stmt(Parser* p)
+{
+	RULE_HEAD();
+
+	stmt_type result = NULL;
+	int mark = p->mark;
+	{ // &'if' if_stmt
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("compound_stmt", "&'if' if_stmt");
+		stmt_type if_stmt_var;
+		if (
+			(CrGen_LookaheadWithInt(1, CrGen_ExpectToken, p, TOK_IF)) // token = 'if'
+			&&
+			(if_stmt_var = rule_if_stmt(p)) // if_stmt
+			)
+		{
+			CrParser_PrintSuccess("compound_stmt", "&'if' if_stmt");
+			result = if_stmt_var;
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("compound_stmt", "&'if' if_stmt");
+	}
+done:
+	p->level--;
+	return result;
+}
+
 // assignment:
 //     | NAME ':' expression ['=' annotated_rhs]
 //     | ('(' single_target ')' | single_subscript_attribute_target) ':' expression ['=' annotated_rhs]
@@ -540,6 +641,77 @@ static stmt_type rule_assignment(Parser* p)
 		}
 		p->mark = mark;
 		CrParser_PrintFail("assignment", "((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?");
+	}
+
+	result = NULL;
+done:
+	p->level--;
+	return result;
+}
+
+// if_stmt:
+//     | invalid_if_stmt
+//     | 'if' named_expression ':' block elif_stmt
+//     | 'if' named_expression ':' block else_block?
+stmt_type rule_if_stmt(Parser* p)
+{
+	RULE_HEAD();
+
+	stmt_type result = NULL;
+	int mark = p->mark;
+	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
+	{
+		p->error_indicator = 1;
+		p->level--;
+		return NULL;
+	}
+
+	int start_lineno = p->tokens[mark]->lineno;
+	int start_col_offset = p->tokens[mark]->col_offset;
+
+	{ // 'if' named_expression ':' block else_block?
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("if_stmt", "'if' named_expression ':' block else_block?");
+		Token* keyword;
+		expr_type expr;
+		Token* literal;
+		ast_stmt_seq* block;
+		ast_stmt_seq* else_block;
+		if (
+			(keyword = CrGen_ExpectToken(p, TOK_IF)) // token = 'if'
+			&&
+			(expr = rule_named_expression(p)) // named_expression
+			&&
+			(literal = CrGen_ExpectToken(p, TOK_COLON)) // token = ':'
+			&&
+			(block = rule_block(p)) // block
+			&&
+			(else_block = rule_else_block(p), !p->error_indicator) // else_block?
+			)
+		{
+			CrParser_PrintSuccess("if_stmt", "'if' named_expression ':' block else_block?");
+			Token* token = CrGen_GetLastNonWhitespaceToken(p);
+			if (token == NULL)
+			{
+				p->level--;
+				return NULL;
+			}
+			int end_lineno = token->end_lineno;
+			int end_col_offset = token->end_col_offset;
+			result = CrAST_If(expr, block, else_block, EXTRA);
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("if_stmt", "'if' named_expression ':' block else_block?");
 	}
 
 	result = NULL;
@@ -848,6 +1020,42 @@ static expr_type rule_comparison(Parser* p)
 
 	int start_lineno = p->tokens[mark]->lineno;
 	int start_col_offset = p->tokens[mark]->col_offset;
+	{ // bitwise_or compare_op_bitwise_or_pair+
+		if (p->error_indicator)
+		{
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("comparison", "bitwise_or compare_op_bitwise_or_pair+");
+		expr_type bitwise_or_var;
+		ast_seq* compare_op_var;
+		if (
+			(bitwise_or_var = rule_bitwise_or(p)) // bitwise_or
+			&&
+			(compare_op_var = looprule_86(p)) // compare_op_bitwise_or_pair+
+			)
+		{
+			CrParser_PrintSuccess("comparison", "bitwise_or compare_op_bitwise_or_pair+");
+			Token* token = CrGen_GetLastNonWhitespaceToken(p);
+			if (token == NULL)
+			{
+				p->level--;
+				return NULL;
+			}
+			int end_lineno = token->end_lineno;
+			int end_col_offset = token->end_col_offset;
+			result = CrAST_Compare(bitwise_or_var, CHECK(ast_int_seq*, CrGen_GetCmpops(p, compare_op_var)), CHECK(ast_expr_seq*, CrGen_GetExprs(p, compare_op_var)), EXTRA);
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("comparison", "bitwise_or compare_op_bitwise_or_pair+");
+	}
 	{ // bitwise_or
 		if (p->error_indicator)
 		{
@@ -2688,6 +2896,480 @@ done:
 	return result;
 }
 
+// named_expression: assignment_expression | invalid_named_expression | expression !':='
+expr_type rule_named_expression(Parser* p)
+{
+	RULE_HEAD();
+
+	expr_type result = NULL;
+	int mark = p->mark;
+	{ // assignment_expression
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("named_expression", "assignment_expression");
+		expr_type assignment_expression_var;
+		if (
+			(assignment_expression_var = rule_assignment_expression(p)) // assignment_expression
+			)
+		{
+			CrParser_PrintSuccess("named_expression", "assignment_expression");
+			result = assignment_expression_var;
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("named_expression", "assignment_expression");
+	}
+	{ // expression !':='
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("named_expression", "expression !':='");
+		expr_type expression_var;
+		if (
+			(expression_var = rule_expression(p)) // expression
+			&&
+			CrGen_LookaheadWithInt(0, CrGen_ExpectToken, p, TOK_COLONEQUAL) // token != ':='
+			)
+		{
+			CrParser_PrintSuccess("named_expression", "expression !':='");
+			result = expression_var;
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("named_expression", "expression !':='");
+	}
+	result = NULL;
+done:
+	p->level--;
+	return result;
+}
+
+// assignment_expression: NAME ':=' ~ expression
+expr_type rule_assignment_expression(Parser* p)
+{
+	RULE_HEAD();
+
+	expr_type result = NULL;
+	int mark = p->mark;
+	if (p->mark == p->fill && CrGen_FillToken(p) < 0)
+	{
+		p->error_indicator = 1;
+		p->level--;
+		return result;
+	}
+
+	int start_lineno = p->tokens[mark]->lineno;
+	int start_col_offset = p->tokens[mark]->col_offset;
+	{ // NAME ':=' ~ expression
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("assignment_expression", "NAME ':=' ~ expression");
+		expr_type name;
+		Token* literal;
+		int cut_var = 0;
+		expr_type expr;
+		if (
+			(name = CrGen_NameToken(p)) // token = 'NAME'
+			&&
+			(literal = CrGen_ExpectToken(p, TOK_COLONEQUAL)) // token = ':='
+			&&
+			(cut_var = 1) // ~
+			&&
+			(expr = rule_expression(p)) // expression
+			)
+		{
+			CrParser_PrintSuccess("assignment_expression", "NAME ':=' ~ expression");
+			Token* token = CrGen_GetLastNonWhitespaceToken(p);
+			if (token == NULL)
+			{
+				p->level--;
+				return NULL;
+			}
+			int end_lineno = token->end_lineno;
+			int end_col_offset = token->end_col_offset;
+			result = CrAST_NamedExpr(CHECK(expr_type, CrGen_SetExprContext(p, name, Store)), expr, EXTRA);
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("assignment_expression", "NAME ':=' ~ expression");
+		if (cut_var)
+		{
+			p->level--;
+			return NULL;
+		}
+	}
+	result = NULL;
+done:
+	p->level--;
+	return result;
+}
+
+// block: NEWLINE INDENT statements DEDENT | simple_stmts | invalid_block
+ast_stmt_seq* rule_block(Parser* p)
+{
+	RULE_HEAD();
+
+	ast_stmt_seq* result = NULL;
+	if (CrGen_IsMemoized(p, type_block, &result))
+	{
+		p->level--;
+		return result;
+	}
+	int mark = p->mark;
+	{ // NEWLINE INDENT statements DEDENT
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("block", "NEWLINE INDENT statements DEDENT");
+		Token* newline_var;
+		Token* indent_var;
+		ast_stmt_seq* stmts;
+		Token* dedent_var;
+		if (
+			(newline_var = CrGen_ExpectToken(p, TOK_NEWLINE)) // token = 'NEWLINE'
+			&&
+			(indent_var = CrGen_ExpectToken(p, TOK_INDENT)) // token = 'INDENT'
+			&&
+			(stmts = rule_statements(p)) // statements
+			&&
+			(dedent_var = CrGen_ExpectToken(p, TOK_DEDENT)) // token = 'DEDENT'
+			)
+		{
+			CrParser_PrintSuccess("block", "NEWLINE INDENT statements DEDENT");
+			result = stmts;
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("block", "NEWLINE INDENT statements DEDENT");
+	}
+	{ // simple_stmts
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("block", "simple_stmts");
+		ast_stmt_seq* simple_stmts;
+		if (
+			(simple_stmts = rule_simple_statements(p)) // simple_stmts
+			)
+		{
+			CrParser_PrintSuccess("block", "simple_stmts");
+			result = simple_stmts;
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("block", "simple_stmts");
+	}
+	result = NULL;
+done:
+	CrGen_Memo_Insert(p, mark, type_block, result);
+	p->level--;
+	return result;
+}
+
+// statements: statement+
+ast_stmt_seq* rule_statements(Parser* p)
+{
+	RULE_HEAD();
+
+	ast_stmt_seq* result = NULL;
+	int mark = p->mark;
+	{ // statement+
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("statements", "statement+");
+		ast_seq* stmts;
+		if (
+			(stmts = looprule_3(p)) // statement+
+			)
+		{
+			CrParser_PrintSuccess("statements", "statement+");
+			result = (ast_stmt_seq*)CrGen_SeqFlatten(p, stmts);
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("statements", "statement+");
+	}
+	result = NULL;
+done:
+	p->level--;
+	return result;
+}
+
+// statement: compound_stmt | simple_stmts
+ast_stmt_seq* rule_statement(Parser* p)
+{
+	RULE_HEAD();
+
+	ast_stmt_seq* result = NULL;
+	int mark = p->mark;
+	{ // compound_stmt
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("statement", "compound_stmt");
+		stmt_type compound_stmt;
+		if (
+			(compound_stmt = rule_compound_stmt(p)) // compound_stmt
+			)
+		{
+			CrParser_PrintSuccess("statement", "compound_stmt");
+			result = (ast_stmt_seq*)CrGen_SingletonSeq(p, compound_stmt);
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("statement", "compound_stmt");
+	}
+	{ // simple_stmts
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("statement", "simple_stmts");
+		ast_stmt_seq* simple_stmts;
+		if (
+			(simple_stmts = rule_simple_statements(p)) // simple_stmts
+			)
+		{
+			CrParser_PrintSuccess("statement", "simple_stmts");
+			result = simple_stmts;
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("statement", "simple_stmts");
+	}
+	result = NULL;
+done:
+	p->level--;
+	return result;
+}
+
+// else_block: invalid_else_stmt | 'else' &&':' block
+ast_stmt_seq* rule_else_block(Parser* p)
+{
+	RULE_HEAD();
+
+	ast_stmt_seq* result = NULL;
+	int mark = p->mark;
+	{ // 'else' &&':' block
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("else_block", "'else' &&':' block");
+		Token* keyword;
+		Token* literal;
+		ast_stmt_seq* block;
+		if (
+			(keyword = CrGen_ExpectToken(p, TOK_ELSE)) // token = 'else'
+			&&
+			(literal = CrGen_ExpectForcedToken(p, TOK_COLON)) // forced_token = ':'
+			&&
+			(block = rule_block(p)) // block
+			)
+		{
+			CrParser_PrintSuccess("else_block", "'else' &&':' block");
+			result = block;
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("else_block", "'else' &&':' block");
+	}
+	result = NULL;
+done:
+	p->level--;
+	return result;
+}
+// compare_op_bitwise_or_pair:
+//     | eq_bitwise_or
+//     | noteq_bitwise_or
+//     | lte_bitwise_or
+//     | lt_bitwise_or
+//     | gte_bitwise_or
+//     | gt_bitwise_or
+//     | notin_bitwise_or
+//     | in_bitwise_or
+//     | isnot_bitwise_or
+//     | is_bitwise_or
+static CmpopExprPair* rule_compare_op_bitwise_or_pair(Parser* p)
+{
+	RULE_HEAD();
+
+	CmpopExprPair* result = NULL;
+	int mark = p->mark;
+	{ // eq_bitwise_or
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("compare_op_bitwise_or_pair", "eq_bitwise_or");
+		CmpopExprPair* eq_bitwise_or_var;
+		if (
+			(eq_bitwise_or_var = rule_eq_bitwise_or(p)) // eq_bitwise_or
+			)
+		{
+			CrParser_PrintSuccess("compare_op_bitwise_or_pair", "eq_bitwise_or");
+			result = eq_bitwise_or_var;
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("compare_op_bitwise_or_pair", "eq_bitwise_or");
+	}
+	{ // noteq_bitwise_or
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("compare_op_bitwise_or_pair", "noteq_bitwise_or");
+		CmpopExprPair* noteq_bitwise_or_var;
+		if (
+			(noteq_bitwise_or_var = rule_noteq_bitwise_or(p)) // noteq_bitwise_or
+			)
+		{
+			CrParser_PrintSuccess("compare_op_bitwise_or_pair", "noteq_bitwise_or");
+			result = noteq_bitwise_or_var;
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("compare_op_bitwise_or_pair", "noteq_bitwise_or");
+	}
+	result = NULL;
+done:
+	p->level--;
+	return result;
+}
+
+// eq_bitwise_or: '==' bitwise_or
+static CmpopExprPair* rule_eq_bitwise_or(Parser* p)
+{
+	RULE_HEAD();
+
+	CmpopExprPair* result = NULL;
+	int mark = p->mark;
+	{ // '==' bitwise_or
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("eq_bitwise_or", "'==' bitwise_or");
+		Token* literal;
+		expr_type bitwise_or_var;
+		if (
+			(literal = CrGen_ExpectToken(p, TOK_EQUALEQUAL)) // token = '=='
+			&&
+			(bitwise_or_var = rule_bitwise_or(p)) // bitwise_or
+			)
+		{
+			CrParser_PrintSuccess("eq_bitwise_or", "'==' bitwise_or");
+			result = CrGen_CmpopExprPair(p, Eq, bitwise_or_var);
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("eq_bitwise_or", "'==' bitwise_or");
+	}
+	result = NULL;
+done:
+	p->level--;
+	return result;
+}
+
+// noteq_bitwise_or: '!=' bitwise_or
+static CmpopExprPair* rule_noteq_bitwise_or(Parser* p)
+{
+	RULE_HEAD();
+
+	CmpopExprPair* result = NULL;
+	int mark = p->mark;
+	{ // '==' bitwise_or
+		if (p->error_indicator) {
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("noteq_bitwise_or", "'!=' bitwise_or");
+		Token* literal;
+		expr_type bitwise_or_var;
+		if (
+			(literal = CrGen_ExpectToken(p, TOK_NOTEQUAL)) // token = '!='
+			&&
+			(bitwise_or_var = rule_bitwise_or(p)) // bitwise_or
+			)
+		{
+			CrParser_PrintSuccess("noteq_bitwise_or", "'!=' bitwise_or");
+			result = CrGen_CmpopExprPair(p, NotEq, bitwise_or_var);
+			if (result == NULL && CrError_Occurred())
+			{
+				p->error_indicator = 1;
+				p->level--;
+				return NULL;
+			}
+			goto done;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("noteq_bitwise_or", "'!=' bitwise_or");
+	}
+	result = NULL;
+done:
+	p->level--;
+	return result;
+}
+
 // loop_string: STRING
 ast_seq* rule_loop_string(Parser* p)
 {
@@ -2761,6 +3443,79 @@ ast_seq* rule_loop_string(Parser* p)
 	return seq;
 }
 
+// looprule_3: statement
+ast_seq* looprule_3(Parser* p)
+{
+	RULE_HEAD();
+
+	void* result = NULL;
+	int mark = p->mark;
+	int start_mark = p->mark;
+	void** children = (void**)Mem_Alloc(sizeof(void*));
+	if (!children)
+	{
+		p->error_indicator = 1;
+		CrError_NoMemory();
+		p->level--;
+		return NULL;
+	}
+	size_t children_capacity = 1;
+	size_t n = 0;
+	{ // statement
+		if (p->error_indicator)
+		{
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("looprule_3", "statement");
+		ast_stmt_seq* statement_var;
+		while (
+			(statement_var = rule_statement(p)) // statement
+			)
+		{
+			result = statement_var;
+			if (n == children_capacity)
+			{
+				children_capacity *= 2;
+				void** new_children = (void**)Mem_Realloc(children, children_capacity * sizeof(void*));
+				if (!new_children)
+				{
+					p->error_indicator = 1;
+					CrError_NoMemory();
+					p->level--;
+					return NULL;
+				}
+				children = new_children;
+			}
+			children[n++] = result;
+			mark = p->mark;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("looprule_3", "statement");
+	}
+	if (n == 0 || p->error_indicator)
+	{
+		Mem_Free(children);
+		p->level--;
+		return NULL;
+	}
+	ast_seq* seq = (ast_seq*)CrAST_NewGenericSeq(n, p->arena);
+	if (!seq)
+	{
+		Mem_Free(children);
+		p->error_indicator = 1;
+		CrError_NoMemory();
+		p->level--;
+		return NULL;
+	}
+	for (int i = 0; i < n; i++)
+		CrAST_SEQ_SET_UNTYPED(seq, i, children[i]);
+	Mem_Free(children);
+	CrGen_Memo_Insert(p, start_mark, type_looprule_3, seq);
+	p->level--;
+	return seq;
+}
+
 // looprule_14: (star_targets '=')
 ast_seq* looprule_14(Parser* p)
 {
@@ -2830,6 +3585,79 @@ ast_seq* looprule_14(Parser* p)
 		CrAST_SEQ_SET_UNTYPED(seq, i, children[i]);
 	Mem_Free(children);
 	CrGen_Memo_Insert(p, start_mark, type_looprule_14, seq);
+	p->level--;
+	return seq;
+}
+
+// looprule_86: compare_op_bitwise_or_pair
+static ast_seq* looprule_86(Parser* p)
+{
+	RULE_HEAD();
+
+	void* result = NULL;
+	int mark = p->mark;
+	int start_mark = p->mark;
+	void** children = (void**)Mem_Alloc(sizeof(void*));
+	if (!children)
+	{
+		p->error_indicator = 1;
+		CrError_NoMemory();
+		p->level--;
+		return NULL;
+	}
+	size_t children_capacity = 1;
+	size_t n = 0;
+	{ // compare_op_bitwise_or_pair
+		if (p->error_indicator)
+		{
+			p->level--;
+			return NULL;
+		}
+		CrParser_PrintTest("looprule_86", "compare_op_bitwise_or_pair");
+		void* compare_op_bitwise_or_pair_var;
+		while (
+			(compare_op_bitwise_or_pair_var = rule_compare_op_bitwise_or_pair(p)) // compare_op_bitwise_or_pair
+			)
+		{
+			result = compare_op_bitwise_or_pair_var;
+			if (n == children_capacity)
+			{
+				children_capacity *= 2;
+				void** new_children = (void**)Mem_Realloc(children, children_capacity * sizeof(void*));
+				if (!new_children)
+				{
+					p->error_indicator = 1;
+					CrError_NoMemory();
+					p->level--;
+					return NULL;
+				}
+				children = new_children;
+			}
+			children[n++] = result;
+			mark = p->mark;
+		}
+		p->mark = mark;
+		CrParser_PrintFail("looprule_86", "compare_op_bitwise_or_pair");
+	}
+	if (n == 0 || p->error_indicator)
+	{
+		Mem_Free(children);
+		p->level--;
+		return NULL;
+	}
+	ast_seq* seq = (ast_seq*)CrAST_NewGenericSeq(n, p->arena);
+	if (!seq)
+	{
+		Mem_Free(children);
+		p->error_indicator = 1;
+		CrError_NoMemory();
+		p->level--;
+		return NULL;
+	}
+	for (int i = 0; i < n; i++)
+		CrAST_SEQ_SET_UNTYPED(seq, i, children[i]);
+	Mem_Free(children);
+	CrGen_Memo_Insert(p, start_mark, type_looprule_86, seq);
 	p->level--;
 	return seq;
 }
